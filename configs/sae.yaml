@@ -1,0 +1,36 @@
+# SAE + training hyperparameters for LFM3-1.7B-Base interpretability
+
+model:
+  model_id: "LiquidAI/LFM3-1.7B-Base"
+  mlx_path: "./models/lfm3-1.7b-base-mlx"
+  dtype: "bfloat16"
+  quantize: null  # null | "4-bit" | "8-bit"
+  hidden_size: 2048
+  intermediate_size: 7680
+  num_layers: 24
+
+sae:
+  layer: 6                      # target layer (0-23), layer 6 = 2nd global attention
+  d_in: 2048                    # residual stream width
+  d_sae: 16384                  # 8x expansion
+  k: 64                         # TopK sparsity
+  lr: 0.001
+  batch_size: 256
+  num_epochs: 10
+  l1_coeff: 0.0003
+  seed: 42
+
+extract:
+  dataset: "roneneldan/TinyStories"  # small, safe text corpus
+  split: "train"
+  max_samples: 5000
+  max_tokens_per_sample: 512
+  batch_size: 8
+  layers: [6]
+  activation_type: "mlp_intermediate"
+  output_dir: "./data/activations"
+
+steering:
+  layer: 6
+  alpha: 1.0
+  max_tokens: 100

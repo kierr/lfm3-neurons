@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.env
+.venv/
+venv/
+
+# MLX / model weights
+*.safetensors
+*.npz
+*.npy
+mlx_model/
+models/
+weights/
+*.ckpt
+
+# Data / activations (large, gitignored)
+data/activations/
+data/cache/
+*.arrow
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Logs
+*.log
