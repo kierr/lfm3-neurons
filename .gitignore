@@ -11,10 +11,11 @@ venv/
 *.safetensors
 *.npz
 *.npy
+*.pt
+*.ckpt
 mlx_model/
 models/
 weights/
-*.ckpt
 
 # Data / activations (large, gitignored)
 data/activations/
