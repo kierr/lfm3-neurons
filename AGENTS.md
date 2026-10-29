@@ -134,6 +134,11 @@ Open problems, roughly in order of value:
 - Conventional commits (`feat(`, `fix(`, `docs(`, `chore(`); commit promptly;
   keep history clean.
 - Run `python -m py_compile` on anything you edit before committing.
+- Local gates run through lefthook (gitleaks on staged files, compile checks;
+  full scan + link check on push). After cloning: `lefthook install`. The
+  same gates mirror in GitHub Actions (`.github/workflows/ci.yml`), plus a
+  CPU-only smoke test (`scripts/smoke_test.py`) and Dependabot. Never commit
+  tokens or keys; gitleaks will catch them, but do not rely on that.
 - Keep the docstring of every experiment script honest about its decode
   regime. Most past confusion here came from mixing greedy and sampled runs
   without labels.

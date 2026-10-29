@@ -1,0 +1,4 @@
+# Extends gitleaks' default ruleset. Repo-specific allowlists go here if a
+# result ever false-positives; none have so far (17 commits scanned clean).
+[extend]
+useDefault = true

@@ -1,0 +1,51 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  gates:
+    # Mirrors the lefthook pre-commit/pre-push gates for contributors without hooks.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile all Python
+        run: python -m py_compile $(git ls-files '*.py')
+      - name: Check markdown links
+        run: python scripts/check_links.py
+      - uses: oven-sh/setup-bun@v2
+      - name: Prose lint (slopsift, advisory)
+        continue-on-error: true
+        run: bunx slopsift --exit-zero --rulepack ai-style --rulepack reader-first .
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install package (CPU)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+      - name: Smoke test (no model download)
+        run: python scripts/smoke_test.py
+
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
