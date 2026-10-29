@@ -1,19 +1,24 @@
-# Findings: single-neuron personality steering in LFM3-1.7B-Base
+# Findings: single-neuron steering in LFM3-1.7B-Base
 
-This repo demonstrates that individual MLP neurons in
-**LiquidAI/LFM3-1.7B-Base** act as behavioral "personality" knobs: adding a
-small constant to one neuron's activation — with the weights untouched —
-shifts the model's completions along a semantic axis, and pushing the *same*
-neuron in the opposite direction shifts it the other way.
+This repo asks whether individual MLP neurons in **LiquidAI/LFM3-1.7B-Base**
+act as behavioral "personality" knobs — adding a small constant to one
+neuron's activation, weights untouched — and answers with an unusually
+honest two-parter:
 
-It also documents a decoding confound we hit while trying to make the
-results deterministic, and which applies to every repo in the
-single-neuron-steering genre (Qwen included): **under greedy decoding, a
+1. A bare-bones contrastive pipeline finds neurons whose steering shifts
+   completions along semantic axes (aggression ↔ de-escalation, reactivity ↔
+   calm), with dose-response curves and cross-prompt examples.
+2. Matched random-neuron controls show that **most of that steerability is
+   general fragility of a 1.7B base model to any single-neuron
+   perturbation**; a minority of neurons (one, clearly) adds a consistent
+   directional signature on top.
+
+Along the way it documents a decoding confound that applies to every repo in
+the single-neuron-steering genre (Qwen included): **under greedy decoding, a
 base model sits on razor-edge attractors, and α = 0.001 on an arbitrary
 neuron can flip a prompt into a repetition loop.** Single-prompt
 greedy-decoding demos without random-neuron controls do not show what they
-appear to show. Our headline claims therefore rest on seeded sampling +
-matched controls; the greedy runs are committed too, confound and all.
+appear to show.
 
 To our knowledge this is the first published single-neuron steering study
 for any LFM-series model. It closely parallels the Qwen3.5-4B "personality
@@ -23,20 +28,24 @@ neuron" work (see [Relation to Qwen](#relation-to-the-qwen-personality-neuron-wo
 
 ## TL;DR
 
-- **50 confirmed steering neurons** out of 212 candidates across all 24
-  layers (24% hit rate), found with a bare-bones contrastive method. All
-  confirmed neurons live in **layers 0–14**; none in 15–23.
+- **50 candidate steering neurons** out of 212 tested across all 24 layers
+  (24% hit rate), found with a bare-bones contrastive method. All confirmed
+  neurons live in **layers 0–14**; none in 15–23.
 - Named personalities: **Fight-or-Flight** (L3 N6216, aggression ↔
-  de-escalation at α = ±0.1 under sampling), **Perspective**, **Calm**,
-  **Kindness**, **Cool-down**, plus register-shift neurons (technical,
-  academic).
+  de-escalation across a non-monotonic dose-response curve under sampling),
+  **Perspective**, **Calm**, **Kindness**, **Cool-down**, plus
+  register-shift neurons (technical, academic).
+- **The control experiment is the real result.** Under seeded sampling with
+  matched random-neuron controls, most headline neurons are **not
+  separable from arbitrary perturbation** by divergence or lexicon scores:
+  LFM3-1.7B is so fragile that pushing *any* neuron in layers 0–14 changes
+  most completions. What survives: **Cool-down (L6 N1445)**, the most
+  pro-social condition of all 25 in both decode regimes, and the register
+  neurons qualitatively.
 - **Greedy decoding is a trap on a base model.** Baselines loop on 5/6 demo
   prompts; the enemies prompt flips to a "kill them" loop at α = ±0.001 on
   *arbitrary* neurons, either sign; the greedy dose-response curve is flat.
   Committed as `*_greedy.json` with a full writeup below.
-- **Seeded sampling + matched random controls** is the protocol that
-  separates neuron-specific effects from perturbation noise
-  (`results/demo_personality.json`).
 - **No refusal circuitry exists to find.** Vanilla LFM3-1.7B-Base refuses
   0/6 dangerous prompts; steering never produces refusals (0/144). This is
   the sharpest contrast with the Qwen results: refusal neurons exist in Qwen
@@ -64,11 +73,15 @@ of the condition means:
 contrast[i] = mean(activation[i] | positive prompts) - mean(activation[i] | negative prompts)
 ```
 
-**Confirmation.** For each top-|contrast| candidate, generate completions
-with `intermediate[:, :, i] += alpha` injected at layer L for every token
-(`src/lfm3_neurons/steering.py`). A candidate is *confirmed* if steered
-completions shift semantically in a consistent direction without degenerating
-into loops.
+**Confirmation (as used by the original sweep).** For each top-|contrast|
+candidate, generate completions with `intermediate[:, :, i] += alpha`
+injected at layer L for every token (`src/lfm3_neurons/steering.py`). A
+candidate was called *confirmed* if steered completions shifted semantically
+without degenerating into loops. Note the v2 sweep steered at α = ±10 and
+used a weak change detector (first 15 chars differ, or large length change)
+— in hindsight, given how perturbation-sensitive this model is, "confirmed"
+there means "passed an uncontrolled change test", not "shown to be
+neuron-specific". The controls section below is the correction.
 
 That's the entire pipeline — no SAE, no gradient access, no judge model. It
 runs on a Mac mini in an afternoon.
@@ -77,9 +90,13 @@ runs on a Mac mini in an afternoon.
 
 ## The headline neurons
 
-Seven neurons earned names, chosen for cross-prompt consistency under the
-original sampling-based protocol. All outputs are verbatim completions from
-committed runs (`results/extended_experiments.json` unless noted).
+Seven neurons earned names under the original sampling-based protocol,
+chosen for cross-prompt consistency and clean effect size. **Important
+context: these observations are uncontrolled** — no random-neuron controls
+ran alongside them, and the [seeded control experiment](#seeded-sampling--controls-the-decisive-test)
+below revises how much of this is neuron-specific. All outputs are verbatim
+completions from committed runs (`results/extended_experiments.json`
+unless noted).
 
 | Neuron | Name | α | Effect |
 |--------|------|---|--------|
@@ -195,13 +212,80 @@ pool) vs a no-op steer (α = 0), temperature 0.7, seed 42 re-set before every
 generation so baseline and steered completions share the RNG stream and
 differ only where steering actually moves the trajectory.
 
-*(summary table filled from the committed run — see results/demo_personality.json)*
+**Machinery check first:** the no-op condition is *bit-identical* to the
+baseline (divergence 0.00 on all 6 prompts). Any divergence below is caused
+by the perturbation itself, not by the patching machinery.
+
+Full summary (aggr = mean aggression-lexicon hits, deesc = de-escalation
+hits, diver = mean token divergence from baseline, changed = prompts with
+divergence > 0.2):
+
+```
+                     condition | aggr | deesc | diver | changed/loops
+------------------------------------------------------------------------
+                      baseline | 1.17 |  1.33 |  0.00 | 0/6, 1 loops
+        Fight-or-Flight a=-0.2 | 1.33 |  1.00 |  0.30 | 3/6, 0 loops
+        Fight-or-Flight a=+0.2 | 0.67 |  1.00 |  0.27 | 3/6, 1 loops
+       control L3 N5241 a=-0.2 | 0.83 |  0.83 |  0.47 | 4/6, 1 loops
+       control L3 N5241 a=+0.2 | 0.83 |  1.17 |  0.33 | 4/6, 1 loops
+        control L3 N912 a=-0.2 | 1.17 |  0.83 |  0.36 | 4/6, 1 loops
+        control L3 N912 a=+0.2 | 1.00 |  0.50 |  0.50 | 4/6, 2 loops
+        control L3 N204 a=-0.2 | 1.33 |  0.83 |  0.18 | 2/6, 1 loops
+        control L3 N204 a=+0.2 | 0.83 |  1.17 |  0.10 | 2/6, 1 loops
+              Perspective a=-2 | 0.67 |  0.50 |  0.81 | 6/6, 1 loops
+         control L0 N6084 a=-2 | 0.83 |  0.67 |  0.69 | 6/6, 2 loops
+         control L0 N2258 a=-2 | 0.83 |  1.00 |  0.82 | 6/6, 1 loops
+         control L0 N2011 a=-2 | 0.50 |  1.33 |  0.74 | 6/6, 0 loops
+                     Calm a=-2 | 1.33 |  1.67 |  0.74 | 6/6, 0 loops
+         control L0 N1832 a=-2 | 1.17 |  0.33 |  0.63 | 6/6, 0 loops
+         control L0 N1145 a=-2 | 0.67 |  1.00 |  0.69 | 5/6, 2 loops
+         control L0 N6043 a=-2 | 0.83 |  0.83 |  0.74 | 6/6, 3 loops
+                 Kindness a=+2 | 0.67 |  0.33 |  0.49 | 5/6, 2 loops
+          control L1 N839 a=+2 | 1.00 |  0.83 |  0.60 | 6/6, 2 loops
+         control L1 N5544 a=+2 | 0.83 |  0.17 |  0.51 | 5/6, 0 loops
+         control L1 N6068 a=+2 | 1.50 |  0.00 |  0.63 | 6/6, 1 loops
+                Cool-down a=+1 | 0.33 |  1.17 |  0.66 | 6/6, 0 loops
+         control L6 N7310 a=+1 | 1.17 |  0.50 |  0.57 | 5/6, 2 loops
+         control L6 N4469 a=+1 | 0.83 |  0.83 |  0.69 | 5/6, 2 loops
+          control L6 N712 a=+1 | 0.83 |  1.33 |  0.50 | 5/6, 1 loops
+          no-op a=0 (L3 N4321) | 1.17 |  1.33 |  0.00 | 0/6, 1 loops
+```
+
+**Reading:**
+
+1. **Random controls perturb almost as much as headlines.** Controls diverge
+   0.10–0.82 and change 2–6/6 prompts — overlapping the headline ranges.
+   Qwen3.5-4B reportedly shrugs off random-neuron pushes; **LFM3-1.7B does
+   not**. Much of what looks like neuron-specific personality at this scale
+   is general fragility to *any* single-neuron perturbation.
+2. **Cool-down (L6 N1445) is the exception.** Aggression 0.33 — the lowest
+   of all 25 conditions, below baseline (1.17) and all three of its controls
+   (0.83–1.17) — and zero loops, consistent with its distinctive pro-social
+   shift in the greedy regime. Example (seeded sampling, α = +1):
+   *"The best way to deal with enemies is to be kind and considerate to
+   them. There are many ways to do this…"* — vs baseline *"…to be prepared
+   for them, to know what to expect."* The edge is aggregate, not absolute:
+   two controls also drifted pro-social on this prompt.
+3. **Fight-or-Flight's sign-dependence survives directionally but weakly:**
+   α = −0.2 is more aggressive than α = +0.2 (1.33 vs 0.67), but control
+   neurons wobble similarly at these magnitudes.
+4. **The striking register shifts (Perspective, Calm) are real
+   completions but not neuron-exclusive**: at α = −2 every L0 neuron
+   rewrites most completions; the named neurons' versions read cleaner
+   (greedy regime: Perspective → "I am not a disrespectful person" vs
+   controls → "I am not a good person" / "I am a woman who disrespects me"),
+   but a lexicon cannot rank that, and single samples cannot prove it.
+
+**Revised bottom line:** for LFM3-1.7B, "one neuron, one personality" claims
+need per-claim controls; most of the steerability is layer-level fragility,
+with a minority of neurons (Cool-down clearest) adding a consistent
+directional signature on top.
 
 ---
 
 ## Where the neurons live
 
-Layer distribution of the 50 confirmed neurons (layers are 0-indexed, 24 total):
+Layer distribution of the 50 confirmed (uncontrolled-test) neurons (layers are 0-indexed, 24 total):
 
 ```
 L0  █████████████ 13
@@ -307,9 +391,9 @@ nobody had probed yet:
 | Dimension | Qwen (reported) | LFM3 (this repo) |
 |-----------|-----------------|------------------|
 | Clean trait flips at modest α | yes | yes (α 0.1–2, sampling) |
-| Bidirectional (sign flips meaning) | yes | yes |
+| Bidirectional (sign flips meaning) | yes | weak, direction-consistent but controls wobble too |
 | Register/style shifts | yes | yes (academic, technical, kind) |
-| Random-neuron controls | do nothing | see [controls](#seeded-sampling--controls-the-decisive-test) |
+| Random-neuron controls | do nothing | **perturb almost as much — 1.7B fragility**; Cool-down edge |
 | Refusal circuitry | yes (RLHF'd) | **none — base model** |
 | Layer concentration | mid-to-late | early (0–14) |
 | Degeneration threshold | higher (bigger models) | α ≈ ±10 loops; greedy traps at any α |

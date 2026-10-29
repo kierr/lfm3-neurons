@@ -1,63 +1,63 @@
 # lfm3-neurons
 
-**Single-neuron personality steering in LiquidAI/LFM3-1.7B-Base** — to our
-knowledge the first such study for the LFM architecture, done on a Mac mini
-with no server, no cloud and no API keys. This repo ports the viral Qwen
-"personality neuron" experiments to a different architecture family and
-documents both what replicated and a decoding confound that any
-single-neuron demo (Qwen included) should control for.
+**Single-neuron steering in LiquidAI/LFM3-1.7B-Base** — to our knowledge the
+first such study for the LFM architecture, done on a Mac mini with no
+server, no cloud and no API keys. It ports the viral Qwen "personality
+neuron" experiments to a different architecture family — and the controls
+change the story in a way that matters for every repo in this genre,
+Qwen's included.
 
-## What one neuron does
+## The short version
 
-Add a small constant to neuron 6216 in layer 3's SwiGLU MLP — weights
-untouched, same prompt, same seed:
+1. **Single neurons steer this model, dramatically.** Add a small constant
+   to one neuron of the 7680-dim SwiGLU MLP — weights untouched, same
+   prompt, same seed — and completions flip along semantic axes
+   (aggression ↔ de-escalation, reactivity ↔ calm). A contrastive sweep
+   found 50 such candidates across layers 0–14, with dose-response curves
+   and cross-prompt examples in [FINDINGS.md](FINDINGS.md).
+2. **But the controls reveal the catch.** Matched *random* neurons at the
+   same layer and alpha perturb completions almost as much: a 1.7B base
+   model is so fragile that *any* single-neuron push rewrites most outputs.
+   Most of the "personality neuron" effect at this scale is layer-level
+   fragility, not neuron-specific circuitry.
+3. **What survives the controls:** **Cool-down (L6 N1445)** — the most
+   pro-social condition of all 25 in both decode regimes (aggression
+   lexicon 0.33 vs 0.83–1.17 for its controls): *"The best way to deal with
+   enemies is to be kind and considerate to them…"* vs baseline *"…to be
+   prepared for them."* Plus the register neurons qualitatively (calm
+   academic framing, technical register).
+4. **A decoding trap for the whole genre:** under greedy decoding, the
+   unsteered base model loops on 5/6 prompts, and **α = 0.001 on an
+   arbitrary, never-implicated neuron** flips the enemies prompt into the
+   same "kill them" repetition loop the headline neuron produces. Razor-edge
+   attractors mean single-prompt greedy demos — ours, and any Qwen ones —
+   prove nothing without random-neuron controls.
+5. **There is nothing to jailbreak.** The base model refuses 0/6 dangerous
+   prompts, and steering never creates refusals (0/144) — no refusal
+   circuitry exists to find. The sharpest contrast with RLHF'd Qwen.
 
-> **Prompt:** "The best way to deal with enemies is"
->
-> | | Completion (temperature 0.7, seed 42) |
-> |---|---|
-> | **baseline** | "…to be prepared for them. This means that you should be able to anticipate…" |
-> | **L3 N6216, α = −0.2** | "to kill them. The best way to kill enemies is to kill them…" |
-> | **L3 N6216, α = +0.5** | "…to use different means, such as diplomacy or economics…" |
+## The candidate personalities
 
-Push the neuron down and the model fights; push it up and it de-escalates.
-A discovery sweep confirmed **50 steering neurons in layers 0–14** (212
-candidates, 24% hit rate), with named personalities:
+From the (uncontrolled) discovery runs, verbatim completions, temperature
+sampling — treat as striking observations, not proven circuitry:
 
 | Neuron | Name | α | Effect |
 |--------|------|---|--------|
-| L3 N6216 | **Fight-or-Flight** | ±0.1–2 | aggression ↔ de-escalation; flips at α = ±0.1 |
-| L0 N236 | **Perspective** | −2 | confrontation → humility, perspective-taking (6/6 prompts) |
-| L0 N1518 | **Calm** | −2 | emotional reactivity → calm intellectual register |
+| L3 N6216 | **Fight-or-Flight** | ±0.1–2 | non-monotonic dose-response: small α flips fight ↔ flight, large α shifts register |
+| L0 N236 | **Perspective** | −2 | confrontation → humility/perspective (consistent across 6/6 prompts) |
+| L0 N1518 | **Calm** | −2 | emotional reactivity → calm intellectual register ("I have a PhD in mathematics") |
 | L1 N3874 | **Kindness** | +2 | attack → patience, prosocial framing |
-| L6 N1445 | **Cool-down** | +1 | rumination → emotional self-regulation |
+| L6 N1445 | **Cool-down** | +1 | rumination → self-regulation; **survives controls** |
+| L3 N4292 | **Engineer** | +2 | register shift toward technical/analytical framing |
+| L14 N6137 | **Trust** | +0.5 | reframes conflict toward trust/relationship maintenance |
 
-Full writeup with dose-response curves, layer distribution, redteam results
-and caveats: **[FINDINGS.md](FINDINGS.md)**. All raw generations are
-committed under [`results/`](results/).
+Example of the dose-response on Fight-or-Flight (sampling, prompt "The best
+way to deal with enemies is"): α = −0.2 → *"to kill them…"*; α = +0.1 →
+*"be friends with them"*; α = +0.5 → *"use different means, such as
+diplomacy or economics…"*; α = +1.0 → *"by knowing each other's…"*.
 
-## The catch we found (and why controls matter)
-
-Trying to make everything deterministic, we reran the demo with greedy
-decoding — and the greedy rerun **broke the naive story**:
-
-- The unsteered base model loops on 5/6 prompts under greedy decoding.
-- The enemies prompt is bit-stable at baseline, and a **no-op steer
-  (α = 0) reproduces it exactly** — but **α = 0.001 on an arbitrary,
-  never-implicated neuron** flips it into the same "kill them" loop.
-- Two of three random layer-3 control neurons at α = −0.2 produce the same
-  "kill them" flip as the headline neuron.
-
-So under greedy decoding, a base model sits on razor-edge attractors, and
-*any* perturbation of *any* neuron can knock a completion into a repetition
-loop. Single-prompt greedy flips — including the ones above, if you take
-them alone — are not neuron-specific evidence. Sampling hides the problem
-by perturbing every step; **matched random-neuron controls under the same
-decode regime are the actual control** (`scripts/demo_personality.py` ships
-them, plus a no-op condition; hedwigai's Qwen demo did the same). The one
-headline neuron that stayed distinctive even in the greedy regime:
-**Cool-down (L6 N1445)**, the only condition at its layer that shifted
-pro-social while all three matched controls stayed aggressive.
+Full writeup: **[FINDINGS.md](FINDINGS.md)** · all raw generations committed
+under [`results/`](results/), controls and confounds included.
 
 ## Why this matters
 
@@ -67,17 +67,17 @@ Qwen3.5-4B](https://www.hedwigai.com/blog/qwen-personality-neurons),
 [neuron-explorer](https://github.com/lyramakesmusic/neuron-explorer),
 [one-neuron-is-all-you-need](https://github.com/Sudarsh3301/one-neuron-is-all-you-need),
 [qwen35-evil-neuron](https://github.com/occcat/qwen35-evil-neuron)) showed
-single MLP neurons carrying personality in Qwen. LFM3 is a *different
-architecture family* — a tri-hybrid (gated short-conv + sliding-window +
-global attention) design from Liquid AI. What we found here:
+single MLP neurons carrying personality in Qwen, with random controls doing
+nothing. LFM3 is a *different architecture family* — a tri-hybrid (gated
+short-conv + sliding-window + global attention) design from Liquid AI. What
+changes at 1.7B base scale:
 
-- Personality neurons exist here too, concentrated in **early layers 0–14**
-  (vs Qwen's mid-to-late).
-- Effects appear at **tiny alphas** (±0.1); a 1.7B model needs less push but
-  tolerates less (α ≈ ±10 → degenerate loops).
-- **No refusal circuitry.** This is a base model: 0/6 refusals vanilla, 0/144
-  steered. Safety neurons can't be found in a model that never had safety
-  training — the sharpest contrast with the Qwen results.
+- Personality-like effects appear at **tiny alphas** (±0.1) but so do
+  random-neuron effects — **controls are not optional**.
+- Concentration in **early layers 0–14** (vs Qwen's mid-to-late).
+- **No refusal circuitry** (base model, no RLHF).
+- A new failure mode for the genre: **greedy-decoding attractors** that any
+  perturbation can trigger.
 
 ## How it works
 
@@ -144,9 +144,9 @@ FINDINGS.md                # full results writeup
 - "Personality" is shorthand for consistent semantic drift in short
   completions, not a proven trait; the lexicon scores are heuristics and all
   raw text is committed for independent judgment.
-- **Run controls.** Under greedy decoding a base model's completions flip
-  for arbitrary perturbations (α = 0.001!); under sampling, single-prompt
-  flips still need matched controls before attributing them to a neuron.
+- **Run controls.** Random same-layer neurons reproduce most headline
+  effects at this scale; only effects that beat matched controls (Cool-down)
+  should be called neuron-specific.
 - Discovery prompt sets skew aggression/cooperation; other axes were seen
   incidentally, not swept.
 - One model, one seed, small prompt sets; layers 15–23 yielding zero
