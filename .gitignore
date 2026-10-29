@@ -20,6 +20,7 @@ weights/
 # Data / activations (large, gitignored)
 data/activations/
 data/cache/
+data/*.json
 *.arrow
 
 # IDE

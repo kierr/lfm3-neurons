@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from .find_neurons import _manual_generate_with_intervention
+from .find_neurons import _generate_with_intervention as _manual_generate_with_intervention
 from .model import LFM3Model, ModelConfig
 from .utils import ensure_dir, save_json
 
