@@ -3,7 +3,8 @@
 Guidance for AI agents (and humans) working in this repo: continuing the
 neuron-steering research, rerunning experiments, or porting the method to
 another model. Read [README.md](README.md) and [FINDINGS.md](FINDINGS.md)
-first; this file is the practical layer underneath them.
+first, and [ROADMAP.md](ROADMAP.md) when picking a next experiment; this
+file is the practical layer underneath them.
 
 ## What this repo is
 

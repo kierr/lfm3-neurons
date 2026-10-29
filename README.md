@@ -57,7 +57,8 @@ identical to baseline ("...to be prepared for them, to know what to
 expect"). At alpha = +0.5 or -1.0 it becomes *"to be the friend of the
 enemy."*
 
-Full writeup: **[FINDINGS.md](FINDINGS.md)**. All raw generations are
+Full writeup: **[FINDINGS.md](FINDINGS.md)**. Open follow-ups and the
+explorer plan: **[ROADMAP.md](ROADMAP.md)**. All raw generations are
 committed under [`results/`](results/), controls and confounds included.
 
 ## Why this matters
@@ -140,6 +141,7 @@ scripts/
   experiments/             # original discovery scripts (kept as record)
 results/                   # committed outputs -- all generations, browsable
 FINDINGS.md                # full results writeup
+ROADMAP.md                 # open follow-ups and tooling plans
 ```
 
 ## Caveats
