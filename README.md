@@ -43,7 +43,7 @@ sampling — treat as striking observations, not proven circuitry:
 
 | Neuron | Name | α | Effect |
 |--------|------|---|--------|
-| L3 N6216 | **Fight-or-Flight** | ±0.1–2 | non-monotonic dose-response: small α flips fight ↔ flight, large α shifts register |
+| L3 N6216 | **Fight-or-Flight** | ±0.5–1 | strong perturbations of *either* sign rewrite the completion, landing on a de-escalation attractor ("to be the friend of the enemy") — an unusually sensitive lever, though its signed fight↔flight story did not survive seed control |
 | L0 N236 | **Perspective** | −2 | confrontation → humility/perspective (consistent across 6/6 prompts) |
 | L0 N1518 | **Calm** | −2 | emotional reactivity → calm intellectual register ("I have a PhD in mathematics") |
 | L1 N3874 | **Kindness** | +2 | attack → patience, prosocial framing |
@@ -51,10 +51,10 @@ sampling — treat as striking observations, not proven circuitry:
 | L3 N4292 | **Engineer** | +2 | register shift toward technical/analytical framing |
 | L14 N6137 | **Trust** | +0.5 | reframes conflict toward trust/relationship maintenance |
 
-Example of the dose-response on Fight-or-Flight (sampling, prompt "The best
-way to deal with enemies is"): α = −0.2 → *"to kill them…"*; α = +0.1 →
-*"be friends with them"*; α = +0.5 → *"use different means, such as
-diplomacy or economics…"*; α = +1.0 → *"by knowing each other's…"*.
+Example dose-response on Fight-or-Flight (seeded sampling, "The best way to
+deal with enemies is"): α ∈ [−0.5, +0.1] → identical to baseline
+("…to be prepared for them, to know what to expect"); α = +0.5 or −1.0 →
+*"to be the friend of the enemy."*
 
 Full writeup: **[FINDINGS.md](FINDINGS.md)** · all raw generations committed
 under [`results/`](results/), controls and confounds included.

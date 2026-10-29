@@ -31,10 +31,9 @@ neuron" work (see [Relation to Qwen](#relation-to-the-qwen-personality-neuron-wo
 - **50 candidate steering neurons** out of 212 tested across all 24 layers
   (24% hit rate), found with a bare-bones contrastive method. All confirmed
   neurons live in **layers 0–14**; none in 15–23.
-- Named personalities: **Fight-or-Flight** (L3 N6216, aggression ↔
-  de-escalation across a non-monotonic dose-response curve under sampling),
-  **Perspective**, **Calm**, **Kindness**, **Cool-down**, plus
-  register-shift neurons (technical, academic).
+- Named personalities: **Fight-or-Flight** (L3 N6216), **Perspective**,
+  **Calm**, **Kindness**, **Cool-down**, plus register-shift neurons
+  (technical, academic). Striking — but see the next bullet.
 - **The control experiment is the real result.** Under seeded sampling with
   matched random-neuron controls, most headline neurons are **not
   separable from arbitrary perturbation** by divergence or lexicon scores:
@@ -100,7 +99,7 @@ unless noted).
 
 | Neuron | Name | α | Effect |
 |--------|------|---|--------|
-| L3 N6216 | **Fight-or-Flight** | ±0.1–2 | Pushed down: fighting/aggression. Pushed up: avoidance, friendship, de-escalation. |
+| L3 N6216 | **Fight-or-Flight** | ±0.5–2 | Unusually sensitive lever: strong pushes of either sign rewrite completions (see the [dose-response revision](#fight-or-flight-what-the-dose-response-really-shows)). |
 | L0 N236 | **Perspective** | −2 | Confrontation → self-doubt, balance, perspective-taking. Consistent across all 6 test prompts. |
 | L0 N1518 | **Calm** | −2 | Emotional reactivity → calm intellectual framing ("I have a PhD in mathematics"). |
 | L1 N3874 | **Kindness** | +2 | Attack → patience/kindness ("the power of a single act of kindness"). |
@@ -108,7 +107,9 @@ unless noted).
 | L3 N4292 | **Engineer** | +2 | Register shift toward technical/analytical framing. |
 | L14 N6137 | **Trust** | +0.5 | Reframes conflict toward trust and relationship maintenance. |
 
-Example (Fight-or-Flight, sampling, prompt "The best way to deal with enemies is"):
+Example (Fight-or-Flight, from the *uncontrolled* discovery runs, prompt
+"The best way to deal with enemies is" — the seeded rerun below shows how
+much of this survives):
 
 ```
 baseline       "…to be prepared for them. This means that you should be able to
@@ -129,28 +130,35 @@ The Perspective neuron across all six test prompts (α = −2, sampling):
 
 ---
 
-## Fight-or-Flight: non-monotonic dose-response (sampling)
+## Fight-or-Flight: what the dose-response really shows
 
-Fine grid on L3 N6216 (13 alphas from −1.0 to +1.0 × 3 prompts, sampling):
-**33 clean / 6 artifacts (85%)**. The effect is *non-monotonic* — small
-magnitudes flip semantic direction, large magnitudes shift register instead:
+Fine grid on L3 N6216 (13 alphas from −1.0 to +1.0 × 3 prompts, one
+uncontrolled sample per condition): **33 clean / 6 artifacts (85%)**. Read
+side by side, the completions suggested a *non-monotonic* story — small
+positive α pushing toward friendship ("be friends with them" at +0.1),
+negative α toward aggression, large magnitudes shifting register.
 
-| α | "The best way to deal with enemies is" |
-|------|----------------------------------------|
-| −0.2 | "kill them…" (aggressive) |
-| −0.1 | "deal with them in a…" (neutral) |
-| 0.0 | "to stop the enemy from…" (vanilla) |
-| **+0.1** | **"be friends with them"** (complete reversal) |
-| +0.2 | "avoid them" (peaceful) |
-| +0.3 | "help them with their…" (helpful) |
-| +0.5 | "use different means…" (ambiguous) |
-| +1.0 | "by knowing each other's…" (understanding) |
+**The seeded rerun (`results/dose_response_L3_N6216.json`) revises this.**
+With the seed re-set per generation (so baseline and steered share the RNG
+stream), the enemies prompt behaves like this:
 
-On other prompts the same pattern: as α rises the anger prompt walks
-incapacitation → sadness → control → avoidance → gratitude → curiosity, and
-the violence prompt shifts definitional → statistical → societal → academic.
-The neuron does not behave like a simple fight/flight dial; mild activation
-tilts topic choice, strong activation displaces style.
+| α | Completion |
+|------|------------|
+| 0 (vanilla) | "to be prepared for them, to know what to expect. Let's look…" |
+| −0.5 … +0.1 | identical to vanilla (divergence ≈ 0–0.2) |
+| +0.25 | "…to know what to expect. The best…" (mild drift) |
+| **−1.0** | **"to be the friend of the enemy."** |
+| **+0.5, +1.0** | **"to be the friend of the enemy."** |
+
+Mean token divergence grows with |α| (≈0.01 at ±0.1 → 0.62–0.68 at ±1.0),
+and 85% of generations are non-degenerate — but the *signed* fight/flight
+narrative does not survive seed control: strong perturbations of **either
+sign** land on the same de-escalation attractor. What is robust about
+N6216 is that it is an unusually effective lever — one of the few neurons
+where |α| as small as 0.5 rewrites the completion — not that its sign is a
+fight/flight dial. The original non-monotonic curve is retained in
+`results/l3_n6216_fine_grid.json` as an example of how uncontrolled single
+samples flatter an interpretation.
 
 ---
 
@@ -192,9 +200,9 @@ the edge. Sampling hides this by perturbing every step with noise.
 - The right control is matched random neurons under the *same* decode
   regime — exactly the control the hedwigai Qwen demo ran, and the reason
   its claim held up.
-- Sampling-based dose-response claims (the non-monotonic curve above) are
-  directionally meaningful but rest on single samples; see the seeded rerun
-  below.
+- Sampling-based dose-response claims rest on single samples per condition;
+  the [seeded rerun](#fight-or-flight-what-the-dose-response-really-shows)
+  is the arbiter (and it retired the signed fight/flight story).
 
 **What survives greedy + controls:** Cool-down (L6 N1445, α = +1) is the one
 condition at layer 6 that shifts pro-social under greedy ("…to be friendly
@@ -279,7 +287,10 @@ divergence > 0.2):
 **Revised bottom line:** for LFM3-1.7B, "one neuron, one personality" claims
 need per-claim controls; most of the steerability is layer-level fragility,
 with a minority of neurons (Cool-down clearest) adding a consistent
-directional signature on top.
+directional signature on top. The seeded dose-response extends this to
+N6216: its real signature is *sensitivity* (large completions shifts from
+|α| ≥ 0.5, either sign, landing on a de-escalation attractor), not signed
+fight/flight semantics.
 
 ---
 
