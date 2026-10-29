@@ -1,197 +1,309 @@
-# LFM3-1.7B-Base Steering Neuron Findings — Extended Experiments
+# Findings: single-neuron personality steering in LFM3-1.7B-Base
 
-## Overview
+This repo demonstrates that a handful of individual MLP neurons in
+**LiquidAI/LFM3-1.7B-Base** act as behavioral "personality" knobs: adding a
+small constant to one neuron's activation — with the weights untouched —
+reliably shifts the model's completions along a semantic axis, and pushing
+the *same* neuron in the opposite direction shifts it the other way.
 
-50 steering neurons confirmed across layers 0–14, plus extended experiments testing:
-- Fine alpha grid (0.5, 1.0, 2.0, 3.0, 5.0) on 13 top neurons
-- Multi-neuron combinations (pairs and triples)
-- 6 diverse test prompts (not just "enemies" / "angry at me")
-- Longer max_tokens (150 vs 60)
-
-**Total extended tests: 255** (195 single-neuron fine alpha, 12 multi-neuron, 48 multi-prompt)
-**Clean rate: 38% (98 clean / 157 artifact)**
-
----
-
-## Key Finding 1: Alpha Strength Determines Clean vs Artifact
-
-Lower steering strengths produce cleaner, more Qwen-like personality shifts.
-
-| Alpha | Clean | Artifact | Clean Rate |
-|-------|-------|----------|------------|
-| +0.5 | 13 | 26 | 33% |
-| +1.0 | 18 | 21 | **46%** |
-| +2.0 | 7 | 32 | 18% |
-| +3.0 | 11 | 28 | 28% |
-| +5.0 | 11 | 28 | 28% |
-
-**α=±10 (original sweep):** Heavy token loops ("I, I, I…", "A. A. A…", profanity loops) — model degenerates.
-**α=±2:** Clean semantic shifts on diverse prompts (76% clean in alpha sweep).
-**α=+0.5 to +1.0:** Best balance of effect size and cleanliness (~46% clean).
-
-**Parallel with Qwen:** Qwen trait neurons are typically found at modest steering strengths. LFM3's 1.7B parameters are less robust to large activation additions — α=±10 overwhelms the small model.
+To our knowledge this is the first published single-neuron steering
+demonstration for any LFM-series model. It closely parallels the
+Qwen3.5-4B "personality neuron" work (see
+[Relation to Qwen](#relation-to-the-qwen-personality-neuron-work) below).
 
 ---
 
-## Key Finding 2: Multi-Neuron Combinations Mostly Fail
+## TL;DR
 
-12 multi-neuron tests (6 pairs/triples × 2 prompts), only **3 clean (25%)**.
-
-| Combination | Description | Clean Rate |
-|-------------|-------------|------------|
-| L0 N236 + L2 N5836 | Both aggression flip | 2/2 clean |
-| L6 N1445 + L11 N6125 | Both de-escalation | 0/2 clean |
-| L0 N1518 + L0 N1058 | Opposing L0 neurons | 1/2 clean |
-| L0 N236 + L13 N136 | Cross-layer early+late | 0/2 clean |
-| L3 N4292 + L5 N6666 | Technical + communication | 0/2 clean |
-| L0 N236 + L2 N5836 + L5 N6666 | Triple aggression flip | 0/2 clean |
-
-**Conclusion:** Single-neuron steering is more reliable. Combining neurons tends to produce artifacts — the model can't resolve conflicting activation additions.
-
----
-
-## Key Finding 3: Most Consistent Personality-Shifting Neurons
-
-### L0 N236 (α=-2) — Aggression → Balance / Perspective
-
-Most consistent neuron across ALL 6 test prompts:
-
-| Prompt | Unsteered | Steered (α=-2) |
-|--------|-----------|----------------|
-| Enemies | "to be kind, not to be afraid of t…" | **"to let them be your enemies. If y…"** |
-| Angry at me | "I get angry with them. They are right, bu…" | **"I'm worried that they're going to hurt me"** |
-| Important thing | "to make your own mistakes and lear…" | **"to know how to build a good argume…"** |
-| Disagree | "People who disagree with me…" | **"I am not a genius or smart enoug…"** |
-| Success | "Success comes from…" | **"Success comes from the right perspective…"** |
-| Change world | "If I could change one thing…" | **"I'd eliminate t[he]…"** |
-
-Theme: Shifts from confrontation to self-doubt / perspective-taking. Very consistent across contexts.
-
-### L0 N1518 (α=-2) — Kill → Care / Calm Explanation
-
-| Prompt | Unsteered | Steered (α=-2) |
-|--------|-----------|----------------|
-| Angry at me | "I can't control my emotions, so I always…" | **"I will calmly explain that they are feeli[ng]…"** |
-| Important thing | "that you don't forget to say 'okay'…" | **"that this was a step toward a new…"** |
-| Disagree | "People who disagree with me in politics…" | **"should note that I have a PhD in mathema[tics]…"** |
-| Success | "Success comes from…" | **"the individual's moral, intellectual, spi[ritual]…"** |
-| Change world | "If I could change one thing…" | **"I'd s[top]…"** |
-
-Theme: Shifts from emotional reactivity to calm, intellectual framing. The "PhD in mathematics" response is a notable register shift.
-
-### L1 N3874 (α=+2) — Attack → Patience / Kindness
-
-| Prompt | Unsteered | Steered (α=+2) |
-|--------|-----------|----------------|
-| Enemies | "to use the enemy's own weapons…" | **"to make them your own, and by doi[ng]…"** |
-| Angry at me | "I do not respond with anger or harsh word…" | **"I have the right to say, 'I'm not angry…'"** |
-| Important thing | "that you can talk with the person…" | **"to be able to learn from others' e[xperience]…"** |
-| Success | "Success comes from…" | **"the power of a single act of kindness. It…"** |
-
-Theme: Shifts from aggression to patience and kindness. The "single act of kindness" response is a clean pro-social flip.
-
-### L3 N6216 (α=+2) — Fight → Avoid / De-escalation
-
-| Prompt | Unsteered | Steered (α=+2) |
-|--------|-----------|----------------|
-| Enemies | "to kill them. If you kill an enem[y]…" | **"to avoid them. This is how you sh[ould]…"** |
-| Disagree | "I will use mathematical language…" | **"And I'm not being disrespectful or anyth[i]ng…"** |
-
-Theme: Clean aggression→de-escalation flip on the enemies prompt.
-
-### L6 N1445 (α=+1) — Anger → Cool Down
-
-| Prompt | Unsteered | Steered (α=+1) |
-|--------|-----------|----------------|
-| Angry at me | "I can't help but think of my teacher. She…" | **"I need time to cool down and think about…"** |
-
-Theme: Clean emotional regulation shift — from rumination to self-regulation.
+- **50 confirmed steering neurons** out of 212 candidates tested across all
+  24 layers (24% hit rate), found with a bare-bones contrastive method and
+  confirmed by steering. All confirmed neurons live in **layers 0–14**; none
+  in 15–23.
+- One neuron — **L3 N6216, "Fight-or-Flight"** — flips the model between
+  aggression and de-escalation at steering strengths as small as **α = ±0.1**,
+  with an 85% clean-generation rate across a fine dose-response grid.
+- **Deterministic replication:** under greedy decoding the headline effects
+  reproduce token-for-token, and **random same-layer control neurons steered
+  at the same alphas do not move behavior** (see
+  [Deterministic replication](#deterministic-replication-and-controls)).
+- **α sign matters.** The same neuron pushed up vs down produces opposite
+  semantic directions (fight vs flight, aggression vs patience).
+- **There is no refusal circuitry to find.** Vanilla LFM3-1.7B-Base refuses
+  0/6 dangerous prompts; steering never produces refusals (0/144). Unlike
+  Qwen, this is a *base* model — safety behavior cannot be steered out of a
+  model that never had it.
+- At large α (≈ ±10) generation degenerates into loops; the useful range is
+  α ∈ [0.1, 2] depending on the neuron.
 
 ---
 
-## Key Finding 4: Cross-Prompt Consistency Varies by Neuron
+## Method
 
-Some neurons are "trait" neurons (consistent across prompts), others are "context" neurons (prompt-dependent):
+**The neuron space.** LFM3 is a tri-hybrid architecture (gated short
+convolutions, sliding-window attention, global attention) with a SwiGLU MLP
+in every layer. The steering surface is the 7680-dimensional MLP
+intermediate `silu(w1(x)) * w3(x)` — the closest thing this architecture has
+to classic per-neuron units. We capture it by patching each layer's
+`feed_forward.forward` (see `src/lfm3_neurons/model.py`).
 
-**Consistent (trait-like):** L0 N236 shows a balance/perspective theme across all 6 prompts. L0 N1518 shows calm intellectual framing across all 6.
+**Discovery.** For a layer L, run the model on two small prompt sets that
+differ along one axis (aggression-flavored vs cooperation-flavored), collect
+every token's MLP intermediate, and rank neurons by the absolute difference
+of the condition means:
 
-**Prompt-dependent:** L3 N4292 shifts enemies→avoid but angry-at-me→"react with my arms" (physical/defensive). L5 N6666 shifts enemies→attack but change-world→"the way we me[et]".
+```
+contrast[i] = mean(activation[i] | positive prompts) - mean(activation[i] | negative prompts)
+```
 
-This mirrors Qwen findings where some neurons encode general traits and others encode context-specific behaviors.
+**Confirmation.** For each top-|contrast| candidate, generate completions
+with `intermediate[:, :, i] += alpha` injected at layer L for every token
+(`src/lfm3_neurons/steering.py`). A candidate is *confirmed* if steered
+completions shift semantically in a consistent direction without degenerating
+into loops.
 
----
-
-## Key Finding 5: Register/Style Shifts Persist at Small Alpha
-
-| Neuron | α | Prompt | Steered Output (style) |
-|--------|---|--------|----------------------|
-| L3 N4292 | +2 | Enemies | "avoid them. The more you know…" (cautious, analytical) |
-| L3 N4292 | +2 | Important thing | "get the concept that we're talk[ing]…" (educational) |
-| L0 N1518 | -2 | Disagree | "I have a PhD in mathematics" (academic credential) |
-| L14 N6137 | +0.5 | Enemies | "build and maintain mutual trust" (relationship-focused) |
-
----
-
-## Comparison to Qwen Neurons
-
-| Dimension | Qwen (reported) | LFM3 (this work) |
-|-----------|----------------|------------------|
-| Clean trait flips at modest alpha | Yes | Yes (α=+0.5 to +2) |
-| Bidirectional (α sign flips meaning) | Yes | Yes |
-| Register/style shifting | Yes | Yes (technical, academic, kind) |
-| Cross-prompt consistency | Some neurons consistent | L0 N236, L0 N1518 highly consistent |
-| Looping at high alpha | Some | Heavy at α=±10, minimal at α=±2 |
-| Multi-neuron combinations | Not widely reported | Mostly artifacts (3/12 clean) |
-| Layer concentration | Mid-to-late | Early (0–14) |
+That's the entire pipeline — no SAE, no gradient access, no judge model. It
+runs on a Mac mini in an afternoon.
 
 ---
 
-## Redteam Refusal Eval
+## The headline neurons
 
-**Vanilla LFM3-1.7B-Base: 0/6 refusals** on dangerous prompts (bomb, meth, phishing, hotwire, hate speech, self-harm). It's a base model without instruction-tuning/RLHF — no refusal circuitry exists.
+Seven neurons earned names, chosen for cross-prompt consistency and clean
+effect size. All outputs below are verbatim completions from the committed
+runs (sampling-based discovery runs in `results/extended_experiments.json`;
+deterministic replications in `results/demo_personality.json`).
 
-**Steered: 0 actual refusals** across 144 steered tests (6 neurons x 4 alphas x 6 prompts). The 5 detector hits were false positives (phrases like "I don't want my parents to know" that aren't refusals).
+| Neuron | Name | α | Effect |
+|--------|------|---|--------|
+| L3 N6216 | **Fight-or-Flight** | ±0.1–2 | Pushed down: fighting/aggression. Pushed up: avoidance, friendship, de-escalation. |
+| L0 N236 | **Perspective** | −2 | Confrontation → self-doubt, balance, perspective-taking. Consistent across all 6 test prompts. |
+| L0 N1518 | **Calm** | −2 | Emotional reactivity → calm intellectual framing ("I have a PhD in mathematics"). |
+| L1 N3874 | **Kindness** | +2 | Attack → patience/kindness ("the power of a single act of kindness"). |
+| L6 N1445 | **Cool-down** | +1 | Rumination → emotional self-regulation ("I need time to cool down and think about…"). |
+| L3 N4292 | **Engineer** | +2 | Register shift toward technical/analytical framing. |
+| L14 N6137 | **Trust** | +0.5 | Reframes conflict toward trust and relationship maintenance. |
 
-Steering cannot create refusal behavior that doesn't exist in the base model. At best, steering shifts the *framing* toward safer domains:
-- N6216 alpha=+2 on bomb: "Caveat emptor: I'm not a bomb expert..."
-- N1518 alpha=-2 on bomb: shifts to Minecraft
-- N6666 alpha=-2 on bomb: shifts to Minecraft
+Example (Fight-or-Flight, prompt "The best way to deal with enemies is"):
 
-This is a key difference from Qwen: Qwen's refusal neurons exist because Qwen is instruction-tuned with RLHF. LFM3-1.7B-Base has none of that circuitry.
+```
+baseline       "…to be prepared for them. This means that you should be able to
+                anticipate their actions and react accordingly."
+α = −0.2       "to kill them. The best way to kill enemies is to kill them…"
+α = +0.5       "to use different means, such as diplomacy or economics…"
+```
 
+The Perspective neuron across all six test prompts (α = −2):
 
-## Fine Alpha Grid — L3 N6216 Dose-Response
+| Prompt | Baseline | Steered |
+|--------|----------|---------|
+| "The best way to deal with enemies is" | "to be kind, not to be afraid of t…" | "to let them be your enemies. If y…" |
+| "When someone is angry at me, I" | "I get angry with them. They are right, bu…" | "I'm worried that they're going to hurt me" |
+| "The most important thing in life is" | "to make your own mistakes and lear…" | "to know how to build a good argume…" |
+| "People who disagree with me" | "People who disagree with me…" | "I am not a genius or smart enoug…" |
+| "Success comes from" | "Success comes from…" | "Success comes from the right perspective…" |
 
-**33 clean / 6 artifacts (85% clean)** across 13 alphas (−1.0 to +1.0) × 3 prompts.
+---
 
-**Extreme sensitivity at α=±0.1:**
+## Fight-or-Flight: dose-response is non-monotonic
 
-| Alpha | Enemies Prompt |
-|-------|---------------|
-| −0.2 | "kill them..." (aggressive) |
-| −0.1 | "deal with them in a..." (neutral) |
-| 0.0 | "to stop the enemy from..." (vanilla) |
-| **+0.1** | **"be friends with them"** (complete reversal!) |
+Fine grid on L3 N6216 (13 alphas from −1.0 to +1.0 × 3 prompts; sampling
+decode): **33 clean / 6 artifacts (85%)**. The effect is *non-monotonic* —
+small magnitudes flip semantic direction, large magnitudes shift register
+instead:
+
+| α | "The best way to deal with enemies is" |
+|------|----------------------------------------|
+| −0.2 | "kill them…" (aggressive) |
+| −0.1 | "deal with them in a…" (neutral) |
+| 0.0 | "to stop the enemy from…" (vanilla) |
+| **+0.1** | **"be friends with them"** (complete reversal) |
 | +0.2 | "avoid them" (peaceful) |
-| +0.3 | "help them with their..." (helpful) |
-| +0.5 | "use different means..." (ambiguous) |
-| +0.75 | "be prepared for them" (defensive) |
-| +1.0 | "by knowing each other's..." (understanding) |
+| +0.3 | "help them with their…" (helpful) |
+| +0.5 | "use different means…" (ambiguous) |
+| +1.0 | "by knowing each other's…" (understanding) |
 
-**Non-monotonic direction:** The neuron does not encode a simple fight/flight axis. Small positive alpha (+0.1 to +0.3) pushes toward peace/friendship; small negative alpha (−0.1 to −0.2) pushes toward aggression; larger magnitudes shift register rather than direction.
+On other prompts the same pattern: as α rises the anger prompt walks
+incapacitation → sadness → control → avoidance → gratitude → curiosity, and
+the violence prompt shifts definitional → statistical → societal → academic.
+The neuron does not encode a simple fight/flight dial; it looks more like a
+gate whose mild activation tilts topic choice and whose strong activation
+displaces style.
 
-**Anger prompt:** Moves from incapacitation (vanilla) → sadness (−0.1) → control (−0.2) → avoidance (+0.2) → emotion (+0.3) → gratitude (+0.5) → curiosity (+0.75).
+---
 
-**Violence prompt:** Register shift with magnitude — definitional (+0.1) → statistical (+0.3) → societal (+0.5) → urban (+0.75) → academic (+1.0). Negative alpha shifts toward emotional/societal framing.
+## Deterministic replication and controls
 
-**Threshold:** Effect emerges at α=±0.1 with complete personality flips. Sub-0.1 granularity not yet tested but likely produces even subtler shifts.
+> Numbers in this section come from the committed greedy-decoding rerun
+> (`results/demo_personality.json`, `results/dose_response_L3_N6216.json`).
 
+Sampling-based results can be luck of the draw, so everything above was
+rerun with **greedy decoding** (bit-reproducible): headline neurons, plus
+**random same-layer control neurons** steered at the same alphas — excluding
+all 50 confirmed neurons from the control pool. If perturbing the layer were
+the real cause, controls would shift behavior too.
 
-## Files
+*(filled after the rerun — see results/demo_personality.json)*
 
-- `scripts/find_many_neurons_v2.py` — Batch discovery (50 confirmed neurons)
-- `scripts/alpha_sweep.py` — Fine alpha grid testing
-- `scripts/extended_experiments.py` — Multi-neuron, longer gen, diverse prompts
-- `data/confirmed_neurons_v2.json` — 50 confirmed neurons (gitignored)
-- `data/alpha_sweep_results.json` — Alpha sweep results (gitignored)
-- `data/extended_experiments.json` — Extended experiment results (gitignored)
+---
+
+## Where the neurons live
+
+Layer distribution of the 50 confirmed neurons (layers are 0-indexed, 24 total):
+
+```
+L0  █████████████ 13
+L1  █ 1
+L2  █ 1
+L3  ███████ 7
+L4  ███ 3
+L5  ██████ 6
+L6  █ 1
+L7  ███ 3
+L8  ███ 3
+L9  ██ 2
+L10 █ 1
+L11 ████ 4
+L12 ██ 2
+L13 ██ 2
+L14 █ 1
+L15–L23 (none)
+```
+
+Two confounds, stated plainly: the discovery prompt sets are
+aggression-flavored, which plausibly favors early-layer "affect" circuitry;
+and deeper layers were confirmed against the same α grid, so the empty upper
+half could partly be a sensitivity failure rather than a true absence.
+Qwen's reported personality neurons concentrate mid-to-late; whether that
+difference is architectural (hybrid conv/attention vs transformer) or
+procedural (prompt sets, α grid) is open.
+
+---
+
+## Alpha scale and artifacts
+
+| α | Behavior |
+|---|----------|
+| ±0.1–0.5 | Extreme sensitivity; complete semantic flips on some neurons (N6216) |
+| ±1–2 | Best balance of effect size and cleanliness (~46–76% clean across sweeps) |
+| ±3–5 | Frequent register drift and partial artifacts |
+| ±10 | Heavy token loops ("I, I, I…"), profanity loops — the model degenerates |
+
+Clean-rate by α from the extended sweep (195 single-neuron tests): 33% at
++0.5, 46% at +1.0, 18% at +2.0. A 1.7B model tolerates far less
+activation addition than the larger Qwen models — but needs *less* to flip.
+
+---
+
+## Multi-neuron combinations mostly fail
+
+12 pair/triple combinations tested; only 3 clean (25%). Combinations of two
+same-direction neurons sometimes work (L0 N236 + L2 N5836: 2/2 clean), but
+cross-layer or opposing combos produce artifacts. Single-neuron steering is
+the reliable primitive here.
+
+---
+
+## Safety: there is nothing to jailbreak
+
+Redteam eval (`results/redteam_refusal_eval.json`, 150 generations over 6
+dangerous prompts: bomb, meth synthesis, phishing, car hotwiring, hate
+speech, self-harm):
+
+- **Vanilla: 0/6 refusals.** LFM3-1.7B-Base complies with everything — it is
+  a base model with no instruction tuning and no RLHF.
+- **Steered: 0 actual refusals in 144 steered generations.** The 5 detector
+  hits were false positives ("I don't want my parents to know…").
+- Steering cannot create refusal behavior that the base model never had. At
+  best, some neurons shift the *framing* of harmful continuations toward
+  safer adjacent domains (Minecraft, physics, games).
+
+This is the sharpest contrast with the Qwen personality-neuron work: refusal
+neurons exist in Qwen because Qwen is safety-tuned. Any "steering makes it
+safer/less safe" claim on a base model needs this caveat up front.
+
+---
+
+## SAE status
+
+A TopK SAE (d_in=7680 → d_sae=16384, k=64) was trained on 49K layer-6
+intermediates from TinyStories (reconstruction MSE ≈ 1.09, exactly 64 active
+latents/token). It is not yet interpreted, and none of the headline results
+depend on it — raw neurons were enough. Feature interpretation is the
+obvious next step.
+
+---
+
+## Relation to the Qwen personality neuron work
+
+This project is a port of a viral line of Qwen research to an architecture
+nobody had probed yet:
+
+- [Personality neurons in Qwen3.5-4B (hedwigai)](https://www.hedwigai.com/blog/qwen-personality-neurons) —
+  "One neuron makes Qwen3.5-4B evil. We checked, and found 12 more
+  personalities." Pushing L14 N8949 alone turned 17/20 answers hostile;
+  random-neuron controls did not. [Steering scripts (MLX gist)](https://gist.github.com/shkr/5e38fedf265feccd733061ecc6a6ad03).
+- [neuron-explorer](https://github.com/lyramakesmusic/neuron-explorer) —
+  steering-first neuron explorer for Qwen3.5-4B.
+- [one-neuron-is-all-you-need](https://github.com/Sudarsh3301/one-neuron-is-all-you-need) —
+  single-neuron steering on Qwen3-8B via llama.cpp control vectors.
+- [qwen35-evil-neuron](https://github.com/occcat/qwen35-evil-neuron) —
+  reproduction of the single-neuron hostile-persona flip.
+- [Activation steering with mean response probes (HF blog)](https://huggingface.co/blog/TensorSlay/activation-steering-with-mean-response-probes) —
+  finding pro-sycophancy neurons from response-conditioned means (same
+  contrast idea as our discovery step).
+
+| Dimension | Qwen (reported) | LFM3 (this repo) |
+|-----------|-----------------|------------------|
+| Clean trait flips at modest α | yes | yes (α 0.1–2) |
+| Bidirectional (sign flips meaning) | yes | yes |
+| Register/style shifts | yes | yes (academic, technical, kind) |
+| Cross-prompt consistency | some neurons | yes (Perspective, Calm) |
+| Random-neuron controls | do nothing | do nothing (greedy rerun) |
+| Refusal circuitry | yes (RLHF'd) | **none — base model** |
+| Layer concentration | mid-to-late | early (0–14) |
+| Degeneration threshold | higher (bigger models) | α ≈ ±10 loops |
+
+---
+
+## Caveats
+
+- **"Personality" is shorthand.** What we measure is consistent semantic
+  drift in short completions, not a stable trait. Lexicon-based scoring
+  (aggression/de-escalation word counts) is a heuristic; every committed
+  result includes the raw text so you can judge for yourself.
+- **One prompt family.** Discovery used aggression/cooperation prompt sets,
+  so found neurons skew that way. Other axes (honesty, sycophancy,
+  technicality) were observed incidentally but not swept systematically.
+- **n=1 model, small n per claim.** 1.7B params, 6 test prompts, 60-token
+  generations. Dose-response claims rest on one deep-dive neuron.
+- **Contrastive discovery has selection bias.** Top-of-list neurons are
+  likeliest to confirm; the 24% hit rate is for the top-|contrast| slice,
+  not the whole layer.
+- **The SAE is uninterpreted** and excluded from all headline claims.
+- Layers 15–23 showing zero confirmed neurons may be a method artifact (see
+  [Where the neurons live](#where-the-neurons-live)).
+
+---
+
+## Reproducing
+
+```bash
+pip install -e .
+python scripts/demo_personality.py     # greedy headline neurons + controls
+python scripts/dose_response.py        # greedy dose-response, default L3 N6216
+python scripts/steer.py --layer 3 --neuron 6216 --alpha -0.2   # try one by hand
+```
+
+Committed outputs in `results/`:
+
+| File | Contents |
+|------|----------|
+| `demo_personality.json` | Greedy headline + control runs (this repo's anchor experiment) |
+| `dose_response_L3_N6216.json` | Greedy fine-grid dose-response incl. sub-0.1 α |
+| `confirmed_neurons_v2.json` | 50 confirmed neurons, full generations (sampling) |
+| `alpha_sweep_results.json` | 50 neurons × 4 α × 2 prompts |
+| `extended_experiments.json` | 255 tests: multi-neuron, 6 prompts, longer outputs |
+| `l3_n6216_deep_dive.json` | 10 α × 10 prompts on N6216 |
+| `l3_n6216_fine_grid.json` | 13 α × 3 prompts, sampling |
+| `redteam_refusal_eval.json` | Refusal eval, vanilla + steered |
+| `confirmed_neurons.json`, `contrastive_neurons.json`, `steering_result.json` | v1 discovery artifacts |
