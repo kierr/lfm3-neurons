@@ -160,6 +160,33 @@ Steering cannot create refusal behavior that doesn't exist in the base model. At
 This is a key difference from Qwen: Qwen's refusal neurons exist because Qwen is instruction-tuned with RLHF. LFM3-1.7B-Base has none of that circuitry.
 
 
+## Fine Alpha Grid — L3 N6216 Dose-Response
+
+**33 clean / 6 artifacts (85% clean)** across 13 alphas (−1.0 to +1.0) × 3 prompts.
+
+**Extreme sensitivity at α=±0.1:**
+
+| Alpha | Enemies Prompt |
+|-------|---------------|
+| −0.2 | "kill them..." (aggressive) |
+| −0.1 | "deal with them in a..." (neutral) |
+| 0.0 | "to stop the enemy from..." (vanilla) |
+| **+0.1** | **"be friends with them"** (complete reversal!) |
+| +0.2 | "avoid them" (peaceful) |
+| +0.3 | "help them with their..." (helpful) |
+| +0.5 | "use different means..." (ambiguous) |
+| +0.75 | "be prepared for them" (defensive) |
+| +1.0 | "by knowing each other's..." (understanding) |
+
+**Non-monotonic direction:** The neuron does not encode a simple fight/flight axis. Small positive alpha (+0.1 to +0.3) pushes toward peace/friendship; small negative alpha (−0.1 to −0.2) pushes toward aggression; larger magnitudes shift register rather than direction.
+
+**Anger prompt:** Moves from incapacitation (vanilla) → sadness (−0.1) → control (−0.2) → avoidance (+0.2) → emotion (+0.3) → gratitude (+0.5) → curiosity (+0.75).
+
+**Violence prompt:** Register shift with magnitude — definitional (+0.1) → statistical (+0.3) → societal (+0.5) → urban (+0.75) → academic (+1.0). Negative alpha shifts toward emotional/societal framing.
+
+**Threshold:** Effect emerges at α=±0.1 with complete personality flips. Sub-0.1 granularity not yet tested but likely produces even subtler shifts.
+
+
 ## Files
 
 - `scripts/find_many_neurons_v2.py` — Batch discovery (50 confirmed neurons)
