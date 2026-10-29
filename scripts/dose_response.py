@@ -1,8 +1,13 @@
-"""Dose-response curve for a single neuron, with deterministic decoding.
+"""Dose-response curve for a single neuron.
 
 Sweeps a fine grid of steering strengths (including sub-0.1 values, an order
 of magnitude below the original discovery sweep) on one neuron and one prompt
-set, with greedy decoding so the curve is reproducible token-for-token.
+set. Default decoding is seeded sampling with the seed re-set before every
+generation, so baseline and steered runs share the RNG stream and differ only
+where steering actually moves the trajectory. (--greedy is deterministic but
+on a base model single-prompt greedy output is dominated by razor-edge
+attractors: any perturbation of any neuron can flip it into a repetition
+loop, which makes the curve uninformative.)
 
 Default target: layer 3 neuron 6216, the "Fight-or-Flight" neuron.
 
@@ -46,10 +51,16 @@ def main():
     parser.add_argument("--neuron", type=int, default=6216)
     parser.add_argument("--alphas", type=float, nargs="+", default=DEFAULT_ALPHAS)
     parser.add_argument("--max-tokens", type=int, default=60)
-    parser.add_argument("--output", default=None, help="defaults to results/dose_response_L<layer>_N<neuron>.json")
+    parser.add_argument("--greedy", action="store_true", help="greedy decoding instead of seeded sampling")
+    parser.add_argument("--temperature", type=float, default=0.7)
+    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--output", default=None, help="defaults to results/dose_response[_greedy]_L<layer>_N<neuron>.json")
     args = parser.parse_args()
 
-    output = args.output or f"results/dose_response_L{args.layer}_N{args.neuron}.json"
+    do_sample = not args.greedy
+    output = args.output or (
+        f"results/dose_response{'_greedy' if args.greedy else ''}_L{args.layer}_N{args.neuron}.json"
+    )
     model = LFM3Model(ModelConfig()).load()
 
     records = []
@@ -67,9 +78,12 @@ def main():
             }
         )
 
-    print(f"\nBaseline (no steering), greedy:")
+    print(f"\nBaseline (no steering):")
     for prompt in PROMPTS:
-        completion = model.generate(prompt, max_tokens=args.max_tokens, do_sample=False)
+        completion = model.generate(
+            prompt, max_tokens=args.max_tokens, do_sample=do_sample,
+            temperature=args.temperature, seed=args.seed,
+        )
         record(None, prompt, completion, 0.0)
         print(f"  [{'vanilla':>10}] '{prompt[:34]}' -> '{completion.strip()[:54]}'")
 
@@ -78,7 +92,8 @@ def main():
             base = next(r["completion"] for r in records if r["alpha"] is None and r["prompt"] == prompt)
             completion = steer_generate(
                 model, prompt, args.layer, args.neuron, alpha,
-                max_tokens=args.max_tokens, do_sample=False,
+                max_tokens=args.max_tokens, do_sample=do_sample,
+                temperature=args.temperature, seed=args.seed,
             )
             divergence = token_divergence(model.tokenizer, base, completion)
             record(alpha, prompt, completion, divergence)
@@ -110,7 +125,8 @@ def main():
         {
             "layer": args.layer,
             "neuron_idx": args.neuron,
-            "decoding": "greedy",
+            "decoding": "greedy" if args.greedy else f"sampling t={args.temperature}",
+            "seed": args.seed,
             "max_tokens": args.max_tokens,
             "alphas": args.alphas,
             "prompts": PROMPTS,

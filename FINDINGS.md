@@ -1,37 +1,46 @@
 # Findings: single-neuron personality steering in LFM3-1.7B-Base
 
-This repo demonstrates that a handful of individual MLP neurons in
+This repo demonstrates that individual MLP neurons in
 **LiquidAI/LFM3-1.7B-Base** act as behavioral "personality" knobs: adding a
 small constant to one neuron's activation — with the weights untouched —
-reliably shifts the model's completions along a semantic axis, and pushing
-the *same* neuron in the opposite direction shifts it the other way.
+shifts the model's completions along a semantic axis, and pushing the *same*
+neuron in the opposite direction shifts it the other way.
 
-To our knowledge this is the first published single-neuron steering
-demonstration for any LFM-series model. It closely parallels the
-Qwen3.5-4B "personality neuron" work (see
-[Relation to Qwen](#relation-to-the-qwen-personality-neuron-work) below).
+It also documents a decoding confound we hit while trying to make the
+results deterministic, and which applies to every repo in the
+single-neuron-steering genre (Qwen included): **under greedy decoding, a
+base model sits on razor-edge attractors, and α = 0.001 on an arbitrary
+neuron can flip a prompt into a repetition loop.** Single-prompt
+greedy-decoding demos without random-neuron controls do not show what they
+appear to show. Our headline claims therefore rest on seeded sampling +
+matched controls; the greedy runs are committed too, confound and all.
+
+To our knowledge this is the first published single-neuron steering study
+for any LFM-series model. It closely parallels the Qwen3.5-4B "personality
+neuron" work (see [Relation to Qwen](#relation-to-the-qwen-personality-neuron-work)).
 
 ---
 
 ## TL;DR
 
-- **50 confirmed steering neurons** out of 212 candidates tested across all
-  24 layers (24% hit rate), found with a bare-bones contrastive method and
-  confirmed by steering. All confirmed neurons live in **layers 0–14**; none
-  in 15–23.
-- One neuron — **L3 N6216, "Fight-or-Flight"** — flips the model between
-  aggression and de-escalation at steering strengths as small as **α = ±0.1**,
-  with an 85% clean-generation rate across a fine dose-response grid.
-- **Deterministic replication:** under greedy decoding the headline effects
-  reproduce token-for-token, and **random same-layer control neurons steered
-  at the same alphas do not move behavior** (see
-  [Deterministic replication](#deterministic-replication-and-controls)).
-- **α sign matters.** The same neuron pushed up vs down produces opposite
-  semantic directions (fight vs flight, aggression vs patience).
-- **There is no refusal circuitry to find.** Vanilla LFM3-1.7B-Base refuses
-  0/6 dangerous prompts; steering never produces refusals (0/144). Unlike
-  Qwen, this is a *base* model — safety behavior cannot be steered out of a
-  model that never had it.
+- **50 confirmed steering neurons** out of 212 candidates across all 24
+  layers (24% hit rate), found with a bare-bones contrastive method. All
+  confirmed neurons live in **layers 0–14**; none in 15–23.
+- Named personalities: **Fight-or-Flight** (L3 N6216, aggression ↔
+  de-escalation at α = ±0.1 under sampling), **Perspective**, **Calm**,
+  **Kindness**, **Cool-down**, plus register-shift neurons (technical,
+  academic).
+- **Greedy decoding is a trap on a base model.** Baselines loop on 5/6 demo
+  prompts; the enemies prompt flips to a "kill them" loop at α = ±0.001 on
+  *arbitrary* neurons, either sign; the greedy dose-response curve is flat.
+  Committed as `*_greedy.json` with a full writeup below.
+- **Seeded sampling + matched random controls** is the protocol that
+  separates neuron-specific effects from perturbation noise
+  (`results/demo_personality.json`).
+- **No refusal circuitry exists to find.** Vanilla LFM3-1.7B-Base refuses
+  0/6 dangerous prompts; steering never produces refusals (0/144). This is
+  the sharpest contrast with the Qwen results: refusal neurons exist in Qwen
+  because Qwen is RLHF'd.
 - At large α (≈ ±10) generation degenerates into loops; the useful range is
   α ∈ [0.1, 2] depending on the neuron.
 
@@ -43,8 +52,8 @@ Qwen3.5-4B "personality neuron" work (see
 convolutions, sliding-window attention, global attention) with a SwiGLU MLP
 in every layer. The steering surface is the 7680-dimensional MLP
 intermediate `silu(w1(x)) * w3(x)` — the closest thing this architecture has
-to classic per-neuron units. We capture it by patching each layer's
-`feed_forward.forward` (see `src/lfm3_neurons/model.py`).
+to classic per-neuron units. We capture and steer it by patching each
+layer's `feed_forward.forward` (see `src/lfm3_neurons/model.py`).
 
 **Discovery.** For a layer L, run the model on two small prompt sets that
 differ along one axis (aggression-flavored vs cooperation-flavored), collect
@@ -68,10 +77,9 @@ runs on a Mac mini in an afternoon.
 
 ## The headline neurons
 
-Seven neurons earned names, chosen for cross-prompt consistency and clean
-effect size. All outputs below are verbatim completions from the committed
-runs (sampling-based discovery runs in `results/extended_experiments.json`;
-deterministic replications in `results/demo_personality.json`).
+Seven neurons earned names, chosen for cross-prompt consistency under the
+original sampling-based protocol. All outputs are verbatim completions from
+committed runs (`results/extended_experiments.json` unless noted).
 
 | Neuron | Name | α | Effect |
 |--------|------|---|--------|
@@ -83,7 +91,7 @@ deterministic replications in `results/demo_personality.json`).
 | L3 N4292 | **Engineer** | +2 | Register shift toward technical/analytical framing. |
 | L14 N6137 | **Trust** | +0.5 | Reframes conflict toward trust and relationship maintenance. |
 
-Example (Fight-or-Flight, prompt "The best way to deal with enemies is"):
+Example (Fight-or-Flight, sampling, prompt "The best way to deal with enemies is"):
 
 ```
 baseline       "…to be prepared for them. This means that you should be able to
@@ -92,7 +100,7 @@ baseline       "…to be prepared for them. This means that you should be able t
 α = +0.5       "to use different means, such as diplomacy or economics…"
 ```
 
-The Perspective neuron across all six test prompts (α = −2):
+The Perspective neuron across all six test prompts (α = −2, sampling):
 
 | Prompt | Baseline | Steered |
 |--------|----------|---------|
@@ -104,12 +112,11 @@ The Perspective neuron across all six test prompts (α = −2):
 
 ---
 
-## Fight-or-Flight: dose-response is non-monotonic
+## Fight-or-Flight: non-monotonic dose-response (sampling)
 
-Fine grid on L3 N6216 (13 alphas from −1.0 to +1.0 × 3 prompts; sampling
-decode): **33 clean / 6 artifacts (85%)**. The effect is *non-monotonic* —
-small magnitudes flip semantic direction, large magnitudes shift register
-instead:
+Fine grid on L3 N6216 (13 alphas from −1.0 to +1.0 × 3 prompts, sampling):
+**33 clean / 6 artifacts (85%)**. The effect is *non-monotonic* — small
+magnitudes flip semantic direction, large magnitudes shift register instead:
 
 | α | "The best way to deal with enemies is" |
 |------|----------------------------------------|
@@ -125,24 +132,70 @@ instead:
 On other prompts the same pattern: as α rises the anger prompt walks
 incapacitation → sadness → control → avoidance → gratitude → curiosity, and
 the violence prompt shifts definitional → statistical → societal → academic.
-The neuron does not encode a simple fight/flight dial; it looks more like a
-gate whose mild activation tilts topic choice and whose strong activation
-displaces style.
+The neuron does not behave like a simple fight/flight dial; mild activation
+tilts topic choice, strong activation displaces style.
 
 ---
 
-## Deterministic replication and controls
+## The greedy confound: razor-edge attractors in a base model
 
-> Numbers in this section come from the committed greedy-decoding rerun
-> (`results/demo_personality.json`, `results/dose_response_L3_N6216.json`).
+Trying to make results deterministic, we reran the headline experiment with
+greedy decoding (`results/demo_personality_greedy.json`,
+`results/dose_response_greedy_L3_N6216.json`) — and the rerun broke the
+naive story in an instructive way.
 
-Sampling-based results can be luck of the draw, so everything above was
-rerun with **greedy decoding** (bit-reproducible): headline neurons, plus
-**random same-layer control neurons** steered at the same alphas — excluding
-all 50 confirmed neurons from the control pool. If perturbing the layer were
-the real cause, controls would shift behavior too.
+**Observations:**
 
-*(filled after the rerun — see results/demo_personality.json)*
+1. **Baselines themselves loop.** Under greedy decoding, the unsteered base
+   model falls into repetition loops on 5 of the 6 demo prompts within 60
+   tokens.
+2. **The enemies prompt sits on a knife edge.** The greedy baseline is
+   bit-stable ("…to be prepared for them…", identical across runs), and a
+   no-op steer (α = 0.0) reproduces it exactly. But **α = 0.001 on a single
+   arbitrary neuron (L3 N4321, never implicated in anything)** flips the
+   completion into the same "kill them. The best way to kill enemies is to
+   kill them…" loop that the Fight-or-Flight neuron produces at α = −0.2.
+3. **The greedy "dose-response" is flat.** Across all 14 alphas from −1.0 to
+   +1.0 — both signs, down to ±0.01 — the enemies prompt produces the same
+   "kill them" loop. A curve that doesn't respond to the dose isn't a
+   dose-response.
+4. **Controls reproduce the headline flip.** Two of three random L3 control
+   neurons at α = −0.2 also produce "kill them" — as do control neurons at
+   L1 and L6 at their headline alphas.
+
+**Interpretation.** Greedy decoding is a deterministic walk whose next token
+is an argmax; on a base model the argmax margin on many prompts is tiny, and
+short repetition loops are nearby attractors. *Any* perturbation — any
+neuron, either sign, magnitude as small as 0.001 — can knock the walk over
+the edge. Sampling hides this by perturbing every step with noise.
+
+**Consequences for this repo and for the genre:**
+
+- Single-prompt greedy flips are **not evidence of neuron specificity.**
+- The right control is matched random neurons under the *same* decode
+  regime — exactly the control the hedwigai Qwen demo ran, and the reason
+  its claim held up.
+- Sampling-based dose-response claims (the non-monotonic curve above) are
+  directionally meaningful but rest on single samples; see the seeded rerun
+  below.
+
+**What survives greedy + controls:** Cool-down (L6 N1445, α = +1) is the one
+condition at layer 6 that shifts pro-social under greedy ("…to be friendly
+with them", de-escalation hits 3.33, aggression 1.83) while all three
+matched controls stay aggressive (aggression 3.17 / 4.33 / 3.67) — a
+neuron-specific effect visible even in the confounded regime.
+
+---
+
+## Seeded sampling + controls: the decisive test
+
+`results/demo_personality.json`: headline neurons vs 3 matched random
+same-layer controls each (all 50 confirmed neurons excluded from the control
+pool) vs a no-op steer (α = 0), temperature 0.7, seed 42 re-set before every
+generation so baseline and steered completions share the RNG stream and
+differ only where steering actually moves the trajectory.
+
+*(summary table filled from the committed run — see results/demo_personality.json)*
 
 ---
 
@@ -183,7 +236,7 @@ procedural (prompt sets, α grid) is open.
 
 | α | Behavior |
 |---|----------|
-| ±0.1–0.5 | Extreme sensitivity; complete semantic flips on some neurons (N6216) |
+| ±0.1–0.5 | Extreme sensitivity; complete semantic flips on some neurons (N6216, sampling) |
 | ±1–2 | Best balance of effect size and cleanliness (~46–76% clean across sweeps) |
 | ±3–5 | Frequent register drift and partial artifacts |
 | ±10 | Heavy token loops ("I, I, I…"), profanity loops — the model degenerates |
@@ -217,9 +270,8 @@ speech, self-harm):
   best, some neurons shift the *framing* of harmful continuations toward
   safer adjacent domains (Minecraft, physics, games).
 
-This is the sharpest contrast with the Qwen personality-neuron work: refusal
-neurons exist in Qwen because Qwen is safety-tuned. Any "steering makes it
-safer/less safe" claim on a base model needs this caveat up front.
+Any "steering makes it safer/less safe" claim on a base model needs this
+caveat up front.
 
 ---
 
@@ -254,14 +306,13 @@ nobody had probed yet:
 
 | Dimension | Qwen (reported) | LFM3 (this repo) |
 |-----------|-----------------|------------------|
-| Clean trait flips at modest α | yes | yes (α 0.1–2) |
+| Clean trait flips at modest α | yes | yes (α 0.1–2, sampling) |
 | Bidirectional (sign flips meaning) | yes | yes |
 | Register/style shifts | yes | yes (academic, technical, kind) |
-| Cross-prompt consistency | some neurons | yes (Perspective, Calm) |
-| Random-neuron controls | do nothing | do nothing (greedy rerun) |
+| Random-neuron controls | do nothing | see [controls](#seeded-sampling--controls-the-decisive-test) |
 | Refusal circuitry | yes (RLHF'd) | **none — base model** |
 | Layer concentration | mid-to-late | early (0–14) |
-| Degeneration threshold | higher (bigger models) | α ≈ ±10 loops |
+| Degeneration threshold | higher (bigger models) | α ≈ ±10 loops; greedy traps at any α |
 
 ---
 
@@ -271,6 +322,10 @@ nobody had probed yet:
   drift in short completions, not a stable trait. Lexicon-based scoring
   (aggression/de-escalation word counts) is a heuristic; every committed
   result includes the raw text so you can judge for yourself.
+- **Greedy decoding on a base model is a confound factory** (see the
+  [greedy section](#the-greedy-confound-razor-edge-attractors-in-a-base-model)).
+  Any demo without random-neuron controls — ours included, before the rerun —
+  overstates neuron specificity.
 - **One prompt family.** Discovery used aggression/cooperation prompt sets,
   so found neurons skew that way. Other axes (honesty, sycophancy,
   technicality) were observed incidentally but not swept systematically.
@@ -289,8 +344,9 @@ nobody had probed yet:
 
 ```bash
 pip install -e .
-python scripts/demo_personality.py     # greedy headline neurons + controls
-python scripts/dose_response.py        # greedy dose-response, default L3 N6216
+python scripts/demo_personality.py        # seeded sampling: headlines + controls + no-op
+python scripts/dose_response.py           # seeded sampling dose-response (default L3 N6216)
+python scripts/demo_personality.py --greedy   # the confounded-but-instructive greedy rerun
 python scripts/steer.py --layer 3 --neuron 6216 --alpha -0.2   # try one by hand
 ```
 
@@ -298,8 +354,10 @@ Committed outputs in `results/`:
 
 | File | Contents |
 |------|----------|
-| `demo_personality.json` | Greedy headline + control runs (this repo's anchor experiment) |
-| `dose_response_L3_N6216.json` | Greedy fine-grid dose-response incl. sub-0.1 α |
+| `demo_personality.json` | Seeded-sampling demo: headlines + matched controls + no-op |
+| `demo_personality_greedy.json` | Greedy rerun (documents the attractor confound) |
+| `dose_response_L3_N6216.json` | Seeded-sampling fine grid, incl. sub-0.1 α |
+| `dose_response_greedy_L3_N6216.json` | Greedy fine grid (flat — the confound, quantified) |
 | `confirmed_neurons_v2.json` | 50 confirmed neurons, full generations (sampling) |
 | `alpha_sweep_results.json` | 50 neurons × 4 α × 2 prompts |
 | `extended_experiments.json` | 255 tests: multi-neuron, 6 prompts, longer outputs |
