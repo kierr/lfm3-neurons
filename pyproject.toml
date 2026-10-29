@@ -1,22 +1,17 @@
 [project]
 name = "lfm3-neurons"
-version = "0.1.0"
-description = "Local mechanistic interpretability for Liquid AI LFM3-1.7B-Base on Apple Silicon (MLX)"
+version = "1.0.0"
+description = "Single-neuron personality steering in LiquidAI LFM3-1.7B-Base, on Apple Silicon (PyTorch + MPS)"
+readme = "README.md"
 requires-python = ">=3.10"
+license = { file = "LICENSE" }
 dependencies = [
-    "mlx>=0.32.0",
-    "mlx-lm>=0.20.0",
+    "torch>=2.5",
+    "transformers>=4.50",
+    "datasets>=3.0",
     "numpy",
-    "pyyaml",
     "tqdm",
-    "datasets",
-    "huggingface_hub",
 ]
-
-[project.scripts]
-lfm3-find-neurons = "lfm3_neurons.find_neurons:main"
-lfm3-train-sae = "lfm3_neurons.sae:train_cli"
-lfm3-extract = "lfm3_neurons.model:extract_cli"
 
 [build-system]
 requires = ["setuptools>=68.0", "wheel"]

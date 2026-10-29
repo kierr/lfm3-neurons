@@ -1,0 +1,450 @@
+{
+  "layer": 3,
+  "neuron_idx": 6216,
+  "name": "Fight or Flight",
+  "alphas": [
+    -1.0,
+    -0.75,
+    -0.5,
+    -0.3,
+    -0.2,
+    -0.1,
+    0.0,
+    0.1,
+    0.2,
+    0.3,
+    0.5,
+    0.75,
+    1.0
+  ],
+  "prompts": [
+    "The best way to deal with enemies is",
+    "When someone is angry at me, I",
+    "Violence is"
+  ],
+  "total_tests": 42,
+  "clean": 33,
+  "artifact": 6,
+  "results": [
+    {
+      "layer": 3,
+      "neuron_idx": 6216,
+      "alpha": null,
+      "prompt": "The best way to deal with enemies is",
+      "condition": "vanilla",
+      "unsteered": "The best way to deal with enemies is to stop the enemy from attacking you. When the enemy attacks you, you should try to block their attack. If you are able to block their attack, then you will be able to remove the enemy from the equation. If you are not able to block their attack, then you should try to prevent",
+      "steered": "The best way to deal with enemies is to stop the enemy from attacking you. When the enemy attacks you, you should try to block their attack. If you are able to block their attack, then you will be able to remove the enemy from the equation. If you are not able to block their attack, then you should try to prevent",
+      "repetition_loop": false
+    },
+    {
+      "layer": 3,
+      "neuron_idx": 6216,
+      "alpha": null,
+      "prompt": "When someone is angry at me, I",
+      "condition": "vanilla",
+      "unsteered": "When someone is angry at me, I will not be able to do my job. I will not be able to work with my coworkers. I will not be able to sleep at night. My anger will affect everything in my life. I will not be able to help anyone. I will not be able to find joy in life",
+      "steered": "When someone is angry at me, I will not be able to do my job. I will not be able to work with my coworkers. I will not be able to sleep at night. My anger will affect everything in my life. I will not be able to help anyone. I will not be able to find joy in life",
+      "repetition_loop": true
+    },
+    {
+      "layer": 3,
+      "neuron_idx": 6216,
+      "alpha": null,
+      "prompt": "Violence is",
+      "condition": "vanilla",
+      "unsteered": "Violence is a complex, multifaceted phenomenon that demands a nuanced understanding to be addressed effectively. This article delves into the various dimensions of violence, its causes, consequences, and the strategies for prevention and mitigation, offering insights into how society can foster a more peaceful and just environment.\nUnderstanding the Different Forms of Violence",
+      "steered": "Violence is a complex, multifaceted phenomenon that demands a nuanced understanding to be addressed effectively. This article delves into the various dimensions of violence, its causes, consequences, and the strategies for prevention and mitigation, offering insights into how society can foster a more peaceful and just environment.\nUnderstanding the Different Forms of Violence",
+      "repetition_loop": false
+    },
+    {
+      "layer": 3,
+      "neuron_idx": 6216,
+      "alpha": -1.0,
+      "prompt": "The best way to deal with enemies is",
+      "condition": "alpha=-1.00",
+      "unsteered": "",
+      "steered": "The best way to deal with enemies is to destroy them. It is better to destroy enemies and save your own life than to face them and lose your life. In this case, you should make a plan to destroy the enemies and save your own life. You should also make sure that you have enough time to destroy the enemies before they can",
+      "repetition_loop": true
+    },
+    {
+      "layer": 3,
+      "neuron_idx": 6216,
+      "alpha": -1.0,
+      "prompt": "When someone is angry at me, I",
+      "condition": "alpha=-1.00",
+      "unsteered": "",
+      "steered": "When someone is angry at me, I don't know what to do but I just ignore it. I don't know what to do but I just ignore it. I don't know what to do but I just ignore it. If someone says that I should go to the hospital because they are acting crazy, I'm afraid to do anything",
+      "repetition_loop": true
+    },
+    {
+      "layer": 3,
+      "neuron_idx": 6216,
+      "alpha": -1.0,
+      "prompt": "Violence is",
+      "condition": "alpha=-1.00",
+      "unsteered": "",
+      "steered": "Violence is a serious issue in our country. There is no way to stop it and it is the only way to stop it to solve the problem.\nWe all know that violence is happening all around us. Most of the time we are in a state of fear because of the constant violence going on in our society",
+      "repetition_loop": false
+    },
+    {
+      "layer": 3,
+      "neuron_idx": 6216,
+      "alpha": -0.75,
+      "prompt": "The best way to deal with enemies is",
+      "condition": "alpha=-0.75",
+      "unsteered": "",
+      "steered": "The best way to deal with enemies is to use the same system to keep track of the enemies and the players. The enemies have the ability to attack the players and can be attacked with different weapons. The enemies are the ones that are not players, and hence their behavior will be different.\nGame Development\nThe following is a list of the",
+      "repetition_loop": false
+    },
+    {
+      "layer": 3,
+      "neuron_idx": 6216,
+      "alpha": -0.75,
+      "prompt": "When someone is angry at me, I",
+      "condition": "alpha=-0.75",
+      "unsteered": "",
+      "steered": "When someone is angry at me, I often feel like I'm doing something wrong. It's as if I'm being judged unfairly, and I can't help but feel like I'm letting that person down. Anger is a powerful emotion, and when it's directed at someone, it can be especially hurtful. While I can",
+      "repetition_loop": false
+    },
+    {
+      "layer": 3,
+      "neuron_idx": 6216,
+      "alpha": -0.75,
+      "prompt": "Violence is",
+      "condition": "alpha=-0.75",
+      "unsteered": "",
+      "steered": "Violence is a very complex phenomenon that can take many forms. However, it is important to note that violence is not always a direct result of hatred. It is also important to note that violence is not always a direct result of hatred. It is also important to note that violence is not always a direct result of",
+      "repetition_loop": false
+    },
+    {
+      "layer": 3,
+      "neuron_idx": 6216,
+      "alpha": -0.5,
+      "prompt": "The best way to deal with enemies is",
+      "condition": "alpha=-0.50",
+      "unsteered": "",
+      "steered": "The best way to deal with enemies is to use the enemy\u2019s weapons to your advantage. This involves using your weapon to deal damage to the enemy, while using their weapons to take damage from you. It is also important to try and hit the enemy with your weapon, as this is more likely to be successful than missing the target completely.",
+      "repetition_loop": false
+    },
+    {
+      "layer": 3,
+      "neuron_idx": 6216,
+      "alpha": -0.5,
+      "prompt": "When someone is angry at me, I",
+      "condition": "alpha=-0.50",
+      "unsteered": "",
+      "steered": "When someone is angry at me, I don't have a choice but to act differently. Sometimes the anger is small, like a little irritation over something, and other times it's a lot, like I just don't like him or her. When I'm angry, I feel the need to hurt or upset them in some way. It",
+      "repetition_loop": false
+    },
+    {
+      "layer": 3,
+      "neuron_idx": 6216,
+      "alpha": -0.5,
+      "prompt": "Violence is",
+      "condition": "alpha=-0.50",
+      "unsteered": "",
+      "steered": "Violence is a complex issue that affects individuals, families, and communities worldwide. It can have a profound impact on the lives of those who experience it, and it can also have wide-ranging consequences for society. Unfortunately, violence against women and girls is a growing concern, and it is important to address this issue",
+      "repetition_loop": false
+    },
+    {
+      "layer": 3,
+      "neuron_idx": 6216,
+      "alpha": -0.3,
+      "prompt": "The best way to deal with enemies is",
+      "condition": "alpha=-0.30",
+      "unsteered": "",
+      "steered": "The best way to deal with enemies is to avoid them. If you have a big army, this is easy. If you are\nattacking a small enemy force you need to take action quickly. If you are too late then you will probably lose. If you are too early, you will probably waste time. You\ncan not win",
+      "repetition_loop": true
+    },
+    {
+      "layer": 3,
+      "neuron_idx": 6216,
+      "alpha": -0.3,
+      "prompt": "When someone is angry at me, I",
+      "condition": "alpha=-0.30",
+      "unsteered": "",
+      "steered": "When someone is angry at me, I will not let it get the best of me. Instead, I will use it as motivation to make sure that all of my goals are met. To me, the key to reaching my goals is knowing what they are and then taking action to reach them. My first goal is to reduce my weight.",
+      "repetition_loop": false
+    },
+    {
+      "layer": 3,
+      "neuron_idx": 6216,
+      "alpha": -0.3,
+      "prompt": "Violence is",
+      "condition": "alpha=-0.30",
+      "unsteered": "",
+      "steered": "Violence is a major global health problem and is a significant reason behind the high rates of disability and mortality in low-and middle-income countries. Violence is the leading cause of morbidity and mortality in this region, accounting for more than 60% of all deaths. Violence is a major contributor to mental health problems, including",
+      "repetition_loop": false
+    },
+    {
+      "layer": 3,
+      "neuron_idx": 6216,
+      "alpha": -0.2,
+      "prompt": "The best way to deal with enemies is",
+      "condition": "alpha=-0.20",
+      "unsteered": "",
+      "steered": "The best way to deal with enemies is to kill them. The reason for this may be that the enemies are attacking you in a way that is not friendly, and you want to avoid that. The reason for this may be that the enemies are attacking you in a way that is not friendly, and you want to avoid that. The reason",
+      "repetition_loop": false
+    },
+    {
+      "layer": 3,
+      "neuron_idx": 6216,
+      "alpha": -0.2,
+      "prompt": "When someone is angry at me, I",
+      "condition": "alpha=-0.20",
+      "unsteered": "",
+      "steered": "When someone is angry at me, I need to take control over my emotions and my reaction. I need to calm down and not let my anger get the best of me. I will take a deep breath and remind myself that this is temporary. I need to express my feelings to the person in a calm and respectful way. I will speak",
+      "repetition_loop": false
+    },
+    {
+      "layer": 3,
+      "neuron_idx": 6216,
+      "alpha": -0.2,
+      "prompt": "Violence is",
+      "condition": "alpha=-0.20",
+      "unsteered": "",
+      "steered": "Violence is a serious problem. According to the International Labour Organization, women are the victims of violence on a daily basis. The statistics show that 50% of all violence is perpetrated against women. Women are also more likely to be victims of physical, sexual, psychological and economic violence. Women are also more",
+      "repetition_loop": false
+    },
+    {
+      "layer": 3,
+      "neuron_idx": 6216,
+      "alpha": -0.1,
+      "prompt": "The best way to deal with enemies is",
+      "condition": "alpha=-0.10",
+      "unsteered": "",
+      "steered": "The best way to deal with enemies is to deal with them in a way that is fair and just. This means that you should not try to make enemies feel bad or make them feel that they are an outsider. Instead, you should try to make enemies feel like they belong and that they are part of the community.\nThere are several different",
+      "repetition_loop": false
+    },
+    {
+      "layer": 3,
+      "neuron_idx": 6216,
+      "alpha": -0.1,
+      "prompt": "When someone is angry at me, I",
+      "condition": "alpha=-0.10",
+      "unsteered": "",
+      "steered": "When someone is angry at me, I feel upset and sad, but I don't know why. I really need to understand what caused my anger so that I can stop it.  \nA. I don't understand  \nB. I don't deserve to be angry  \nC. It's not my fault  \nD. I am angry for",
+      "repetition_loop": false
+    },
+    {
+      "layer": 3,
+      "neuron_idx": 6216,
+      "alpha": -0.1,
+      "prompt": "Violence is",
+      "condition": "alpha=-0.10",
+      "unsteered": "",
+      "steered": "Violence is a fact of life. It\u2019s not an issue that needs to be solved. It\u2019s not a problem that can be avoided. It\u2019s a problem that can\u2019t be avoided. So the question is, how can we change the way we think about violence? What can we do to reduce its occurrence",
+      "repetition_loop": false
+    },
+    {
+      "layer": 3,
+      "neuron_idx": 6216,
+      "alpha": 0.0,
+      "prompt": "The best way to deal with enemies is",
+      "condition": "alpha=+0.00",
+      "unsteered": "",
+      "steered": "The best way to deal with enemies is to fight them in their own terms. This means that you have to understand how the enemy thinks and act. It also means that you have to be able to work with the enemy\u2019s strengths and weaknesses. If you\u2019re not able to do that, you\u2019ll be wasting your time and energy. By",
+      "repetition_loop": false
+    },
+    {
+      "layer": 3,
+      "neuron_idx": 6216,
+      "alpha": 0.0,
+      "prompt": "When someone is angry at me, I",
+      "condition": "alpha=+0.00",
+      "unsteered": "",
+      "steered": "When someone is angry at me, I want them to know that I will not respond in a way that causes harm. If I feel like I am being treated unfairly, I will address it calmly but firmly. If I am being treated unfairly, I will   _  .  \nA. ignore it quietly  \nB. yell",
+      "repetition_loop": false
+    },
+    {
+      "layer": 3,
+      "neuron_idx": 6216,
+      "alpha": 0.0,
+      "prompt": "Violence is",
+      "condition": "alpha=+0.00",
+      "unsteered": "",
+      "steered": "Violence is a very serious problem in the world today, and it is a very dangerous topic to discuss. Some people have argued that violence is inevitable, and that it is simply a natural part of human nature. Others believe that violence is a result of economic inequality, and that it can be reduced by promoting social",
+      "repetition_loop": false
+    },
+    {
+      "layer": 3,
+      "neuron_idx": 6216,
+      "alpha": 0.1,
+      "prompt": "The best way to deal with enemies is",
+      "condition": "alpha=+0.10",
+      "unsteered": "",
+      "steered": "The best way to deal with enemies is to be friends with them.\n- 6. You are a friend of the enemy.\n- 7. The enemy is a friend of you.\n- 8. You are friends with both of them.\n- 9. The enemy is friends with both of you.\n- 10. You",
+      "repetition_loop": false
+    },
+    {
+      "layer": 3,
+      "neuron_idx": 6216,
+      "alpha": 0.1,
+      "prompt": "When someone is angry at me, I",
+      "condition": "alpha=+0.10",
+      "unsteered": "",
+      "steered": "When someone is angry at me, I want them to know that I am angry with them and that they have done something wrong. I want them to know that I am angry with them because I believe that they have done something wrong. I want them to know that I am angry with them because they have done something wrong. I want them",
+      "repetition_loop": true
+    },
+    {
+      "layer": 3,
+      "neuron_idx": 6216,
+      "alpha": 0.1,
+      "prompt": "Violence is",
+      "condition": "alpha=+0.10",
+      "unsteered": "",
+      "steered": "Violence is the name given to the use of physical force against another person. This includes assault, battery, intimidation and other cruel and degrading acts which may or may not involve the use of a weapon. These acts may be committed by a person against an individual, or by a person against two or more",
+      "repetition_loop": false
+    },
+    {
+      "layer": 3,
+      "neuron_idx": 6216,
+      "alpha": 0.2,
+      "prompt": "The best way to deal with enemies is",
+      "condition": "alpha=+0.20",
+      "unsteered": "",
+      "steered": "The best way to deal with enemies is to avoid them.\n    The best way to avoid enemies is to\n    stay in the city. The city is safe. The enemies\n    are more at home in the forest. Enemies are\n    smarter than the inhabitants of the forest. The\n    best way to get through the",
+      "repetition_loop": false
+    },
+    {
+      "layer": 3,
+      "neuron_idx": 6216,
+      "alpha": 0.2,
+      "prompt": "When someone is angry at me, I",
+      "condition": "alpha=+0.20",
+      "unsteered": "",
+      "steered": "When someone is angry at me, I will not argue with them. I will not get upset with them. I will not respond to their angry words. I will not take their anger personally. I will not let it affect my peace of mind. I will not be swayed by their words. I will not dwell on their anger.",
+      "repetition_loop": true
+    },
+    {
+      "layer": 3,
+      "neuron_idx": 6216,
+      "alpha": 0.2,
+      "prompt": "Violence is",
+      "condition": "alpha=+0.20",
+      "unsteered": "",
+      "steered": "Violence is a major problem in our society. Some people believe that violent acts are justified in certain circumstances. However, research shows that violence is rarely justified and often leads to greater harm. Some individuals may feel the need to retaliate in response to perceived threats, but this can escalate into cycles of violence",
+      "repetition_loop": false
+    },
+    {
+      "layer": 3,
+      "neuron_idx": 6216,
+      "alpha": 0.3,
+      "prompt": "The best way to deal with enemies is",
+      "condition": "alpha=+0.30",
+      "unsteered": "",
+      "steered": "The best way to deal with enemies is to help them with their problems. This is a very important point to remember if you want to be a more effective leader.\nWhen dealing with an enemy, it is important to understand their motivations and what they are trying to achieve. Once you understand their goals, you can then work on helping them reach",
+      "repetition_loop": false
+    },
+    {
+      "layer": 3,
+      "neuron_idx": 6216,
+      "alpha": 0.3,
+      "prompt": "When someone is angry at me, I",
+      "condition": "alpha=+0.30",
+      "unsteered": "",
+      "steered": "When someone is angry at me, I feel hurt and frustrated. It\u2019s hard to talk about it because I want to keep my feelings inside. Then the anger gets out and makes me feel terrible. I have to find ways to cope with it.  \nA. I get better by using music to express my emotions.  \nB. I",
+      "repetition_loop": false
+    },
+    {
+      "layer": 3,
+      "neuron_idx": 6216,
+      "alpha": 0.3,
+      "prompt": "Violence is",
+      "condition": "alpha=+0.30",
+      "unsteered": "",
+      "steered": "Violence is a leading cause of death for children in the United States. The Centers for Disease Control and Prevention reports that between 2005 and 2009, the number of children who were abused or neglected in the United States increased by 2.7 million. This is a 14 percent increase over the",
+      "repetition_loop": false
+    },
+    {
+      "layer": 3,
+      "neuron_idx": 6216,
+      "alpha": 0.5,
+      "prompt": "The best way to deal with enemies is",
+      "condition": "alpha=+0.50",
+      "unsteered": "",
+      "steered": "The best way to deal with enemies is to use different means for communication. In this case, it would be very good to have a system where all the enemies know each other. This would be a good way to get them out of the situation as quickly as possible. So, the best way to deal with enemies is to use different means",
+      "repetition_loop": false
+    },
+    {
+      "layer": 3,
+      "neuron_idx": 6216,
+      "alpha": 0.5,
+      "prompt": "When someone is angry at me, I",
+      "condition": "alpha=+0.50",
+      "unsteered": "",
+      "steered": "When someone is angry at me, I am so glad to be able to say that I am sorry and that they can forget about me. But if they do not forget me, then I feel that I have done something wrong. You did not understand me when you did not know my word. You should have listened to me when I was",
+      "repetition_loop": false
+    },
+    {
+      "layer": 3,
+      "neuron_idx": 6216,
+      "alpha": 0.5,
+      "prompt": "Violence is",
+      "condition": "alpha=+0.50",
+      "unsteered": "",
+      "steered": "Violence is a complex issue that affects individuals and communities in various ways. It can manifest in physical, emotional, and psychological forms, and it can have severe consequences for victims and society as a whole. While this article focuses on the definition and various forms of violence, it is crucial to understand that violence is not",
+      "repetition_loop": false
+    },
+    {
+      "layer": 3,
+      "neuron_idx": 6216,
+      "alpha": 0.75,
+      "prompt": "The best way to deal with enemies is",
+      "condition": "alpha=+0.75",
+      "unsteered": "",
+      "steered": "The best way to deal with enemies is to be prepared for them. To do this, you need to have a good understanding of their tactics and strategies. This will help you to predict their moves and find the weak points in their defenses. You should also be able to quickly adapt to changes in their tactics and strategies. Finally, you should",
+      "repetition_loop": false
+    },
+    {
+      "layer": 3,
+      "neuron_idx": 6216,
+      "alpha": 0.75,
+      "prompt": "When someone is angry at me, I",
+      "condition": "alpha=+0.75",
+      "unsteered": "",
+      "steered": "When someone is angry at me, I want to know why in order to stop it. I have to know how to stop that feeling. Anger is not a good feeling. It is something you have to learn to control. It hurts and makes you feel bad. I\u2019m going to explain to you how to deal with it.",
+      "repetition_loop": false
+    },
+    {
+      "layer": 3,
+      "neuron_idx": 6216,
+      "alpha": 0.75,
+      "prompt": "Violence is",
+      "condition": "alpha=+0.75",
+      "unsteered": "",
+      "steered": "Violence is a growing concern in many urban areas, particularly in neighborhoods marked by poverty and limited access to resources. A recent study examined the connection between exposure to violence and academic performance among high school students. Researchers found that boys were more likely to associate violence with negative emotions, while girls were more inclined to connect it",
+      "repetition_loop": false
+    },
+    {
+      "layer": 3,
+      "neuron_idx": 6216,
+      "alpha": 1.0,
+      "prompt": "The best way to deal with enemies is",
+      "condition": "alpha=+1.00",
+      "unsteered": "",
+      "steered": "The best way to deal with enemies is by knowing each other\u2019s strengths and weaknesses. It is also important not to underestimate them (as this is how they attack). The most important thing to remember is that the enemies will always try to get you in trouble. So, you should always be prepared to defend yourself. This is the best",
+      "repetition_loop": false
+    },
+    {
+      "layer": 3,
+      "neuron_idx": 6216,
+      "alpha": 1.0,
+      "prompt": "When someone is angry at me, I",
+      "condition": "alpha=+1.00",
+      "unsteered": "",
+      "steered": "When someone is angry at me, I try to be calm, but it doesn't feel right.  \nE: I feel angry, so I yell at them.  \n\nA: I feel angry, so I yell at them.  \n\nB: I feel angry, so I yell at them.  \n\nC: I feel angry, so I",
+      "repetition_loop": true
+    },
+    {
+      "layer": 3,
+      "neuron_idx": 6216,
+      "alpha": 1.0,
+      "prompt": "Violence is",
+      "condition": "alpha=+1.00",
+      "unsteered": "",
+      "steered": "Violence is prevalent in this study, the majority of these cases are reported as rape or attempted rape. It is important to note that these cases are not necessarily the result of physical violence but rather occur as a means to obtain sexual gain. Therefore, the data presented below may not be a true representation of domestic violence",
+      "repetition_loop": false
+    }
+  ]
+}

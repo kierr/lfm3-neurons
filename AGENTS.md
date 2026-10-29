@@ -1,24 +1,30 @@
 # lfm3-neurons — Agent Instructions
 
 ## Purpose
-Local mechanistic interpretability for Liquid AI LFM3-1.7B-Base on Apple Silicon (Mac mini, MLX). Find individual neurons/features that steer model behavior. No server, no API keys, local-only.
+Mechanistic interpretability for LiquidAI LFM3-1.7B-Base on Apple Silicon (PyTorch + MPS). Find individual MLP neurons that steer model behavior and demonstrate single-neuron personality steering. No server, no API keys, local-only.
 
 ## Key constraints
-- **Run locally only.** MLX on Mac mini GPU. No remote inference, no cloud API.
-- **Manage memory.** Model is ~1.73B params (~3.5 GB BF16, ~1 GB 4-bit). Stream activations, batch SAE training, don't dump full activation tensors to disk.
-- **No server.** Everything is a Python script or MLX model load. Ollama may have the model but we need direct weight access for activation hooks — use HF + MLX conversion, not ollama API.
-- **LFM3 specifics:** 24 layers (13 gated short-conv k=7, 5 sliding-window attn 256, 6 global attn), hidden=2048, intermediate=7680 (SwiGLU MLP in every layer), vocab=128K, context=256K, BF16, trust_remote_code=True.
+- **Run locally only.** PyTorch on the Mac mini GPU via MPS. No remote inference, no cloud API.
+- **MLX does not work here.** The MLX converter does not support the `lfm3` model_type — do not attempt MLX conversion; use HF + PyTorch with `trust_remote_code=True`.
+- **Manage memory.** Model is ~1.73B params (~3.5 GB BF16). Stream activations, batch SAE training, don't dump full activation tensors to disk.
+- **Deterministic results.** All committed results in `results/` use greedy decoding (`do_sample=False`) so outputs reproduce token-for-token. When rerunning experiments, keep greedy unless explicitly studying sampling variance.
+- **LFM3 specifics:** 24 layers (13 gated short-conv k=7, 5 sliding-window attn 256, 6 global attn), hidden=2048, intermediate=7680 (SwiGLU MLP in every layer), vocab=128K, context=256K, BF16, `trust_remote_code=True`.
+- **Layer indexing:** decoder layer module is `model.model.layers[i]`, its MLP is `.feed_forward` with `.w1/.w2/.w3`.
 
 ## Repo layout
-- `src/lfm3_neurons/` — core library (model loading, SAE, steering, neuron finding)
-- `scripts/` — CLI entry points (download, extract, train, find)
-- `configs/sae.yaml` — SAE + training hyperparameters
-- `data/` — gitignored (activations, SAE weights, cache)
+- `src/lfm3_neurons/` — core library
+  - `model.py` — `LFM3Model` (load, generate, `MLPInterceptor` for capture/steer)
+  - `steering.py` — `find_contrastive_neurons`, `neuron_steered`, `steer_generate`
+  - `metrics.py` — lexicon scores, repetition-loop detector, token divergence
+  - `sae.py` — TopK SAE + training
+  - `utils.py` — JSON/dir helpers
+- `scripts/` — CLIs: `find_neurons`, `steer`, `demo_personality` (flagship), `dose_response`, `extract_activations`, `train_sae`
+- `scripts/experiments/` — one-off discovery/sweep scripts kept as the record of how the neurons were originally found (sampling-based; outputs in `results/`)
+- `results/` — committed experiment outputs (JSON with full generations)
+- `data/` — gitignored (activations, SAE weights, rerun outputs)
+- `FINDINGS.md` — full writeup of all results
 
 ## Conventions
-- Conventional commits: `feat(`, `fix(`, `docs(`, `test(`, `chore(`
-- Commit promptly; this is a single-developer local repo but keep history clean
-- MLX tensors: `mlx.core` arrays, default device (GPU)
-
-## First experiment target
-Layer 6 residual-stream output (2nd global-attention layer) — train one TopK SAE, find features, test activation-addition steering.
+- Conventional commits: `feat(`, `fix(`, `docs(`, `chore(`
+- Commit promptly; single-developer repo but keep history clean
+- Steer via `MLPInterceptor` / `steer_generate` (patched `feed_forward.forward`); don't add new hook mechanisms

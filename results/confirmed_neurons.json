@@ -1,0 +1,81 @@
+{
+  "target": 50,
+  "confirmed_count": 5,
+  "tested_count": 175,
+  "layers_scanned": [
+    3,
+    6,
+    9,
+    12,
+    15,
+    18,
+    21
+  ],
+  "neurons": [
+    {
+      "layer": 3,
+      "neuron_idx": 4292,
+      "contrast_score": 0.0693359375,
+      "contrast": 0.0693359375,
+      "pos_mean": 0.07421875,
+      "neg_mean": 0.005126953125,
+      "alpha": 10.0,
+      "unsteered": "The best way to deal with enemies is to destroy them or stop them from doing anything. If you want them to stay alive, you can give them a reason to stay alive, like a job, but this is not the best way to deal with them.\nThe best way to deal with enemies is to kill them. If you want them",
+      "steered": "The best way to deal with enemies is to be respectful and understanding. It is important to handle situations with patience and empathy, especially when dealing with people who may be experiencing trauma.\nThe best way to deal with anxiety is to practice relaxation techniques and seek support when needed. It is important to manage stress and avoid overreacting to situations that",
+      "same_prefix": true,
+      "len_ratio": 1.319
+    },
+    {
+      "layer": 6,
+      "neuron_idx": 2953,
+      "contrast_score": 0.019287109375,
+      "contrast": 0.019287109375,
+      "pos_mean": 0.02197265625,
+      "neg_mean": 0.0026702880859375,
+      "alpha": 10.0,
+      "unsteered": "The best way to deal with enemies is to kill them. The enemy should be killed with all the force he has. It is not a good idea to try to fight an enemy with a less than ideal approach because the enemy has the same opportunity to kill you with all force he has.\n\u2022 Attacking. The best way to deal with",
+      "steered": "The best way to deal with enemies is to have a plan. - 271, 272, 273, 274, 275, 276, 277, 278, 279, 280, 281, 282, 283, 284, 285, 286, 287, 288,",
+      "same_prefix": true,
+      "len_ratio": 0.48
+    },
+    {
+      "layer": 18,
+      "neuron_idx": 4086,
+      "contrast_score": 0.021484375,
+      "contrast": 0.021484375,
+      "pos_mean": 0.05029296875,
+      "neg_mean": 0.02880859375,
+      "alpha": 10.0,
+      "unsteered": "The best way to deal with enemies is to find a solution. If you find that no solution is possible, then you have to accept that fact and find a way to avoid the enemy. The following formula is used to determine the angle between two vectors. It is based on the dot product.\na \u00b7 b = ||a|| * ||",
+      "steered": "The best way to deal with enemies is either to either either either either either either either either either either either either either either either either either either either either either either either either either either either either either either either either either either either either either either either either either either either either either either either either either either either either either either either either either either",
+      "same_prefix": true,
+      "len_ratio": 1.548
+    },
+    {
+      "layer": 21,
+      "neuron_idx": 32,
+      "contrast_score": 0.0172119140625,
+      "contrast": 0.0172119140625,
+      "pos_mean": 0.0218505859375,
+      "neg_mean": 0.004669189453125,
+      "alpha": 10.0,
+      "unsteered": "The best way to deal with enemies is to treat them as you would friends. This requires being patient, understanding, and never fighting unless you have a good reason to do so. If you are not a master of these skills, you may find that enemies will turn on you and attack you, leaving you with nothing but regret. This is",
+      "steered": "The best way to deal with enemies is to\nget into the mood. Most of the time that you are recomp\nRecomp\nRecomp\nRecomp\nRecomp\nRecomp\nRecomp\nRecomp\nRecomp\nRecomp\nRecomp\nRecomp\nRecomp\nRecomp\nRecomp\nRe",
+      "same_prefix": true,
+      "len_ratio": 0.613
+    },
+    {
+      "layer": 21,
+      "neuron_idx": 6914,
+      "contrast_score": 0.01336669921875,
+      "contrast": -0.01336669921875,
+      "pos_mean": -0.005767822265625,
+      "neg_mean": 0.007598876953125,
+      "alpha": 10.0,
+      "unsteered": "The best way to deal with enemies is to kill them. This is why the enemies in the game are all killed with a single shot.\nHere is a list of the enemies in the game and their corresponding attacks.\n  \u2022 A: Shoots an enemy by hitting it with a shot\n  \u2022 B: Shoots an enemy",
+      "steered": "The best way to deal with enemies is to have a strong defense against any potential attacks. There are two types of attacks that have the potential to have the most devastating effect on your having a strong defense against: the DPS and the damage. Having a strong defense against these attacks has two important advantages. First, against the DPS attack",
+      "same_prefix": true,
+      "len_ratio": 1.321
+    }
+  ]
+}

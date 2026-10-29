@@ -7,20 +7,17 @@ __pycache__/
 .venv/
 venv/
 
-# MLX / model weights
+# Model weights / tensors (large)
 *.safetensors
 *.npz
 *.npy
 *.pt
 *.ckpt
-mlx_model/
 models/
 weights/
 
-# Data / activations (large, gitignored)
-data/activations/
-data/cache/
-data/*.json
+# Raw experiment data (large; curated results live in results/, which is tracked)
+data/
 *.arrow
 
 # IDE

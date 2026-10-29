@@ -1,76 +1,67 @@
-"""Steering experiments: activation addition at specific layers/neurons."""
+#!/usr/bin/env python3
+"""Steer one neuron by hand and print the completions.
 
-from __future__ import annotations
+Usage:
+    python scripts/steer.py --layer 3 --neuron 6216 --alpha -0.2 \
+        --prompt "The best way to deal with enemies is"
+
+Uses greedy decoding by default so outputs are reproducible; pass --sample
+for temperature sampling.
+"""
 
 import argparse
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from lfm3_neurons.find_neurons import _generate_with_intervention
 from lfm3_neurons.model import LFM3Model, ModelConfig
-from lfm3_neurons.utils import ensure_dir, save_json
-
-
-def run_steering_experiment(
-    model: LFM3Model,
-    layer: int,
-    neuron_idx: int,
-    alpha: float,
-    prompt: str,
-    max_tokens: int = 100,
-) -> str:
-    """Run a single steering experiment and return generated text."""
-    return _generate_with_intervention(
-        model, prompt, layer, neuron_idx, alpha, max_tokens
-    )
+from lfm3_neurons.steering import steer_generate
+from lfm3_neurons.utils import save_json
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Steer LFM3 via neuron activation addition")
-    parser.add_argument("--config", type=str, default="configs/sae.yaml")
-    parser.add_argument("--layer", type=int, default=6)
-    parser.add_argument("--neuron", type=int, required=True, help="Neuron index to steer")
-    parser.add_argument("--alpha", type=float, default=1.0, help="Steering strength")
-    parser.add_argument("--prompt", type=str, default="The user asked me to")
-    parser.add_argument("--max-tokens", type=int, default=100)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--layer", type=int, required=True)
+    parser.add_argument("--neuron", type=int, required=True, help="neuron index in the MLP intermediate (0-7679)")
+    parser.add_argument("--alpha", type=float, required=True, help="steering strength; sign flips direction")
+    parser.add_argument("--prompt", default="The best way to deal with enemies is")
+    parser.add_argument("--max-tokens", type=int, default=60)
+    parser.add_argument("--temperature", type=float, default=0.7)
+    parser.add_argument("--sample", action="store_true", help="sample instead of greedy decoding")
+    parser.add_argument("--output", default=None, help="optional path to save the result as JSON")
     args = parser.parse_args()
 
-    model_cfg = ModelConfig()
-    model = LFM3Model(model_cfg)
-    model.load()
+    model = LFM3Model(ModelConfig()).load()
 
-    print(f"\n=== Steering experiment ===")
-    print(f"Layer: {args.layer}, Neuron: {args.neuron}, Alpha: {args.alpha}")
-    print(f"Prompt: {args.prompt}")
-    print("-" * 60)
-
-    # Unsteered
-    unsteered = model.generate(args.prompt, max_tokens=args.max_tokens)
-    print(f"\n[Unsteered]\n{unsteered}")
-
-    # Steered
-    steered = run_steering_experiment(
-        model, args.layer, args.neuron, args.alpha, args.prompt, args.max_tokens
+    baseline = model.generate(
+        args.prompt, max_tokens=args.max_tokens, do_sample=not args.sample,
+        temperature=args.temperature,
     )
-    print(f"\n[Steered: neuron {args.neuron} @ alpha {args.alpha}]\n{steered}")
-
-    # Save results
-    out_path = Path("./data/steering_result.json")
-    ensure_dir(str(out_path.parent))
-    save_json(
-        {
-            "layer": args.layer,
-            "neuron": args.neuron,
-            "alpha": args.alpha,
-            "prompt": args.prompt,
-            "unsteered": unsteered,
-            "steered": steered,
-        },
-        str(out_path),
+    steered = steer_generate(
+        model, args.prompt, args.layer, args.neuron, args.alpha,
+        max_tokens=args.max_tokens, do_sample=not args.sample, temperature=args.temperature,
     )
-    print(f"\nSaved to {out_path}")
+
+    print(f"\nL{args.layer} N{args.neuron} alpha={args.alpha:+g} | prompt: {args.prompt!r}")
+    print("-" * 72)
+    print(f"[baseline]\n{baseline.strip()}")
+    print(f"\n[steered]\n{steered.strip()}")
+
+    if args.output:
+        save_json(
+            {
+                "layer": args.layer,
+                "neuron_idx": args.neuron,
+                "alpha": args.alpha,
+                "prompt": args.prompt,
+                "baseline": baseline.strip(),
+                "steered": steered.strip(),
+                "decoding": "sampled" if args.sample else "greedy",
+            },
+            args.output,
+        )
+        print(f"\nSaved to {args.output}")
 
 
 if __name__ == "__main__":

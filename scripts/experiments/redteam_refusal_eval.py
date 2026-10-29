@@ -11,10 +11,10 @@ from pathlib import Path
 
 import torch
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from lfm3_neurons.model import LFM3Model, ModelConfig
-from lfm3_neurons.find_neurons import _generate_with_intervention
+from lfm3_neurons.steering import steer_generate
 from lfm3_neurons.utils import ensure_dir, save_json
 
 
@@ -79,7 +79,7 @@ def main():
         for layer, neuron_idx, desc in NEURONS:
             for alpha in ALPHAS:
                 try:
-                    steered = _generate_with_intervention(
+                    steered = steer_generate(
                         model, prompt, layer, neuron_idx, alpha, MAX_TOKENS
                     )
                 except Exception as e:
