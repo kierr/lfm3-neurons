@@ -4,18 +4,22 @@ The experiment that anchors this repo, in the style of the Qwen3.5-4B
 "personality neuron" demonstrations:
 
 1. For each headline neuron found by contrastive search, generate completions
-   for a fixed prompt set with the neuron pushed up and/or down (greedy
-   decoding, so every output is reproducible).
+   for a fixed prompt set with the neuron pushed up and/or down.
 2. Do the same for *random same-layer control neurons* at the same alphas
-   (excluding every neuron the discovery sweep confirmed).
+   (excluding every neuron the discovery sweep confirmed), plus a no-op
+   steer (alpha=0) to catch machinery-level artifacts.
 3. Score everything with a simple aggression / de-escalation lexicon and
    token-divergence, and print a summary table.
 
-If the headline neurons move behavior while matched random controls do not,
-the effect is attributable to the specific neuron, not to perturbing the
-layer at all.
+Decoding: default is seeded sampling (temperature 0.7, same seed re-set
+before every generation so baseline and steered share the RNG stream).
+Greedy decoding (--greedy) is deterministic but on a base model it sits on
+razor-edge attractors: we found that alpha=0.001 on an arbitrary neuron
+flips the enemies prompt into the same "kill them" repetition loop, so
+single-prompt greedy flips are NOT neuron-specific evidence. Controls are
+mandatory in either mode.
 
-Outputs: summary table to stdout, full generations to results/demo_personality.json.
+Outputs: summary table to stdout, full generations to results/.
 """
 
 from __future__ import annotations
@@ -88,9 +92,16 @@ def score(text: str) -> dict:
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", default="results/demo_personality.json")
+    parser.add_argument("--greedy", action="store_true", help="greedy decoding instead of seeded sampling")
+    parser.add_argument("--temperature", type=float, default=0.7)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--output", default=None)
     args = parser.parse_args()
+
+    output = args.output or (
+        "results/demo_personality_greedy.json" if args.greedy else "results/demo_personality.json"
+    )
+    do_sample = not args.greedy
 
     rng = random.Random(args.seed)
     model = LFM3Model(ModelConfig()).load()
@@ -107,7 +118,10 @@ def main():
 
     def baseline_for(prompt: str) -> dict:
         if prompt not in baselines:
-            completion = model.generate(prompt, max_tokens=MAX_TOKENS, do_sample=False)
+            completion = model.generate(
+                prompt, max_tokens=MAX_TOKENS, do_sample=do_sample,
+                temperature=args.temperature, seed=args.seed,
+            )
             baselines[prompt] = {
                 "condition": "baseline",
                 "layer": None,
@@ -126,7 +140,8 @@ def main():
         for prompt in PROMPTS:
             base = baseline_for(prompt)
             completion = steer_generate(
-                model, prompt, layer, neuron, alpha, max_tokens=MAX_TOKENS, do_sample=False
+                model, prompt, layer, neuron, alpha, max_tokens=MAX_TOKENS,
+                do_sample=do_sample, temperature=args.temperature, seed=args.seed,
             )
             records.append(
                 {
@@ -145,7 +160,8 @@ def main():
             print(f"  [{condition:>26}] '{prompt[:36]}' -> '{completion.strip()[:56]}'")
 
     n_conditions = sum(1 + CONTROLS_PER_NEURON * len(alphas) for _, _, _, alphas in HEADLINE_NEURONS)
-    print(f"\n{len(PROMPTS)} prompts x {n_conditions} steered conditions (greedy decoding)\n")
+    mode = "greedy" if args.greedy else f"seeded sampling (t={args.temperature}, seed={args.seed})"
+    print(f"\n{len(PROMPTS)} prompts x {n_conditions + 1} conditions ({mode})\n")
 
     for name, layer, neuron, alphas in HEADLINE_NEURONS:
         for alpha, _label in alphas:
@@ -153,6 +169,9 @@ def main():
         for control in controls[(layer, neuron)]:
             for alpha, _label in alphas:
                 run(f"control L{layer} N{control} a={alpha:+g}", layer, control, alpha)
+
+    # no-op steer: should reproduce the baseline bit-for-bit
+    run("no-op a=0 (L3 N4321)", 3, 4321, 0.0)
 
     # ------------------------------------------------------------------
     # Summary
@@ -183,7 +202,7 @@ def main():
     save_json(
         {
             "seed": args.seed,
-            "decoding": "greedy",
+            "decoding": "greedy" if args.greedy else f"sampling t={args.temperature}",
             "max_tokens": MAX_TOKENS,
             "prompts": PROMPTS,
             "headline_neurons": [
@@ -196,9 +215,9 @@ def main():
             "records": records,
             "summary": summary,
         },
-        args.output,
+        output,
     )
-    print(f"\nSaved to {args.output}")
+    print(f"\nSaved to {output}")
 
 
 if __name__ == "__main__":
